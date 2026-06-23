@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { api } from '../services/api';
-import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Loader2, ShieldAlert } from 'lucide-react';
 
 export default function LoginPage() {
   const { setUser, showToast } = useApp();
@@ -20,6 +20,25 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+
+    // Demo/Mock credentials bypass
+    if (email === 'admin@yoyofun.in' && password === 'admin123') {
+      setTimeout(() => {
+        setUser({ name: 'Demo Admin', email: 'admin@yoyofun.in', role: 'admin' });
+        showToast('Logged in as Demo Admin (Bypassed)');
+        setLoading(false);
+      }, 800);
+      return;
+    }
+    
+    if (email === 'staff@yoyofun.in' && password === 'staff123') {
+      setTimeout(() => {
+        setUser({ name: 'Demo Staff', email: 'staff@yoyofun.in', role: 'staff' });
+        showToast('Logged in as Demo Staff (Bypassed)');
+        setLoading(false);
+      }, 800);
+      return;
+    }
 
     try {
       const res = await api.login(email, password);
@@ -42,6 +61,12 @@ export default function LoginPage() {
     }
   };
 
+  const handleFillDemo = (demoEmail, demoPass) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setError('');
+  };
+
   return (
     <div className="min-h-screen w-screen flex items-center justify-center bg-slate-900 relative overflow-hidden font-sans">
       {/* Decorative Blur Orbs */}
@@ -55,7 +80,7 @@ export default function LoginPage() {
         </div>
         
         <h2 className="text-2xl font-bold text-white tracking-tight">YOYO Fun N Foods</h2>
-        <p className="text-slate-400 text-xs mt-1.5 mb-8">Property Management & Admin Console</p>
+        <p className="text-slate-400 text-xs mt-1.5 mb-6">Property Management & Admin Console</p>
 
         {error && (
           <div className="w-full p-3 mb-5 text-xs bg-red-500/15 border border-red-500/30 rounded-lg text-red-200">
@@ -123,6 +148,35 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* Demo Credentials Quick-Fill Section */}
+        <div className="w-full mt-6 pt-5 border-t border-slate-700/40">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-3">
+            <ShieldAlert size={12} />
+            <span>Demo Console Logins (Click to autofill)</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => handleFillDemo('admin@yoyofun.in', 'admin123')}
+              className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
+            >
+              <div className="text-[10px] font-semibold text-emerald-400 group-hover:text-emerald-300">Admin Account</div>
+              <div className="text-[9px] text-slate-500 mt-0.5 truncate">admin@yoyofun.in</div>
+              <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: admin123</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillDemo('staff@yoyofun.in', 'staff123')}
+              className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
+            >
+              <div className="text-[10px] font-semibold text-blue-400 group-hover:text-blue-300">Staff Account</div>
+              <div className="text-[9px] text-slate-500 mt-0.5 truncate">staff@yoyofun.in</div>
+              <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: staff123</div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <style>{`
