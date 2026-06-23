@@ -1,6 +1,7 @@
-const PMS_BASE = import.meta.env.VITE_PMS_API_URL || 'http://localhost:8080/api/pms';
-const ADMIN_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/admin';
-const PUBLIC_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const VITE_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const PMS_BASE = import.meta.env.VITE_PMS_API_URL || `${VITE_API_URL}/pms`;
+const ADMIN_BASE = VITE_API_URL.endsWith('/admin') ? VITE_API_URL : `${VITE_API_URL}/admin`;
+const PUBLIC_BASE = VITE_API_URL;
 
 function getToken() {
   return localStorage.getItem('yoyo_admin_token');

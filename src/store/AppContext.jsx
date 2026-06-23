@@ -468,7 +468,7 @@ export function AppProvider({ children }) {
   }));
 
   const value = {
-    state, dispatch, rawDispatch, user, loading, authChecked, toasts, showToast, removeToast,
+    state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast,
     bookings: state.bookings, activeBookings, checkedInBookings,
     roomCategories: state.roomCategories, roomStatuses: state.roomStatuses,
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,

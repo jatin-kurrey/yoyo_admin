@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './store/AppContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -13,13 +13,36 @@ import PricingPage from './pages/PricingPage';
 import AccountsPage from './pages/AccountsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
 import { sidebarModules, dayLabels, dates } from './data/mockData';
 
 function AppInner() {
+  const { roomCategories, bookings, user, loading, authChecked } = useApp();
   const [activeModule, setActiveModule] = useState('calendar');
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookingPrefill, setBookingPrefill] = useState(null);
-  const { roomCategories, bookings } = useApp();
+
+  // If user role changes (e.g. staff log in), ensure they are redirected away from forbidden views
+  useEffect(() => {
+    if (user?.role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
+      setActiveModule('calendar');
+    }
+  }, [user, activeModule]);
+
+  // Loading indicator
+  if (loading || !authChecked) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 text-white font-sans">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="text-slate-400 text-xs font-medium uppercase tracking-wider">Loading System...</div>
+      </div>
+    );
+  }
+
+  // Auth Guard
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const needsRightPanel = ['calendar', 'roomview'].includes(activeModule);
 
@@ -29,6 +52,10 @@ function AppInner() {
   };
 
   const handleNavigate = (module) => {
+    // Prevent staff from navigation into admin pages
+    if (user?.role === 'staff' && ['pricing', 'accounts', 'settings'].includes(module)) {
+      return;
+    }
     setActiveModule(module);
   };
 
