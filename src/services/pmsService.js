@@ -25,7 +25,7 @@ export const pmsService = {
 
   getPOSTables: () => api.pms.get('/pos/tables'),
   occupyTable: (id, guestName) => api.pms.post(`/pos/tables/${id}/occupy`, { guest_name: guestName }),
-  addKOT: (data) => api.pms.post('/pos/tables/kot', data),
+  addKOT: (tableId, data) => api.pms.post(`/pos/tables/${tableId}/kot`, data),
   generateBill: (id) => api.pms.post(`/pos/tables/${id}/bill`),
   vacateTable: (id) => api.pms.post(`/pos/tables/${id}/vacate`),
   moveToRoom: (id, bookingId) => api.pms.post(`/pos/tables/${id}/move-to-room`, { booking_id: bookingId }),
@@ -43,4 +43,25 @@ export const pmsService = {
   updateRates: (id, basePrice) => api.pms.patch(`/categories/${id}/rates`, { base_price: basePrice }),
 
   getMenuItems: () => api.public.get('/restaurant/items'),
+
+  getTransactions: (params) => {
+    const q = new URLSearchParams();
+    if (params?.type) q.set('type', params.type);
+    if (params?.status) q.set('status', params.status);
+    return api.pms.get(`/transactions?${q.toString()}`);
+  },
+  createTransaction: (data) => api.pms.post('/transactions', data),
+  deleteTransaction: (id) => api.pms.delete(`/transactions/${id}`),
+
+  getSettings: () => api.pms.get('/settings'),
+  upsertSetting: (key, value) => api.pms.post('/settings', { key, value }),
+
+  getRateOverrides: (categoryId) => api.pms.get(`/rate-overrides${categoryId ? `?category_id=${categoryId}` : ''}`),
+  setRateOverride: (data) => api.pms.post('/rate-overrides', data),
+  clearRateOverride: (data) => api.pms.post('/rate-overrides/clear', data),
+
+  getSystemStats: () => api.pms.get('/system/stats'),
+  backupSystem: () => api.pms.get('/system/backup'),
+  restoreSystem: (data) => api.pms.post('/system/restore', data),
+  resetSystem: () => api.pms.post('/system/reset'),
 };

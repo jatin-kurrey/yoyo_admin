@@ -3,19 +3,23 @@ import { Wrench, Calendar, CheckCircle2, XCircle } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
 export default function HousekeepingPage() {
-  const { roomStatuses, housekeepingStaff, dispatch } = useApp();
+  const { roomStatuses, housekeepingStaff, roomCategories, dispatch } = useApp();
   const [selectedFloor, setSelectedFloor] = useState('all');
   const [showOooModal, setShowOooModal] = useState(false);
   const [oooRoom, setOooRoom] = useState(null);
   const [oooReason, setOooReason] = useState('');
 
   const floors = ['all', 1, 2, 3];
-  const filteredRooms = selectedFloor === 'all' ? roomStatuses : roomStatuses.filter(r => r.floor === selectedFloor);
+  const filteredRooms = selectedFloor === 'all' ? roomStatuses : roomStatuses.filter(r => String(r.floor) === String(selectedFloor));
 
   const getRoomCategory = (num) => {
-    if (num < 200) return 'Super Deluxe';
-    if (num < 300) return 'Family Suite';
-    return 'Executive Pack';
+    for (const cat of roomCategories) {
+      if (cat.rooms.some(r => r.number === num)) {
+        const label = cat.name.replace(' ROOMS', '').replace(' SUITES', ' Suite');
+        return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+      }
+    }
+    return 'Room';
   };
 
   const handleSetClean = (num) => dispatch({ type: 'SET_ROOM_CLEAN', payload: num });

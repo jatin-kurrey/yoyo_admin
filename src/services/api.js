@@ -28,6 +28,13 @@ async function request(base, method, path, body) {
     opts.body = JSON.stringify(body);
   }
   const res = await fetch(`${base}${path}`, opts);
+  if (res.status === 401) {
+    clearToken();
+    localStorage.removeItem('yoyo_admin_user');
+    const err = new Error('Session expired. Please login again.');
+    err.status = 401;
+    throw err;
+  }
   const data = await res.json();
   if (!data.success) {
     throw new Error(data.message || 'Request failed');
@@ -45,6 +52,8 @@ export const api = {
   admin: {
     get: (path) => request(ADMIN_BASE, 'GET', path),
     post: (path, body) => request(ADMIN_BASE, 'POST', path, body),
+    patch: (path, body) => request(ADMIN_BASE, 'PATCH', path, body),
+    delete: (path) => request(ADMIN_BASE, 'DELETE', path),
   },
   public: {
     get: (path) => request(PUBLIC_BASE, 'GET', path),

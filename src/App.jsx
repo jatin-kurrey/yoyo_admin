@@ -14,17 +14,22 @@ import AccountsPage from './pages/AccountsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
-import { sidebarModules, dayLabels, dates } from './data/mockData';
+import { sidebarModules } from './data/mockData';
 
 function AppInner() {
-  const { roomCategories, bookings, user, loading, authChecked } = useApp();
+  const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels } = useApp();
   const [activeModule, setActiveModule] = useState('calendar');
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookingPrefill, setBookingPrefill] = useState(null);
 
-  // If user role changes (e.g. staff log in), ensure they are redirected away from forbidden views
+  // If user role changes, ensure they are redirected away from forbidden views
   useEffect(() => {
-    if (user?.role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
+    const role = user?.role;
+    if (role === 'hk_staff' && activeModule !== 'hk') {
+      setActiveModule('hk');
+    } else if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(activeModule)) {
+      setActiveModule('calendar');
+    } else if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
       setActiveModule('calendar');
     }
   }, [user, activeModule]);
@@ -52,10 +57,10 @@ function AppInner() {
   };
 
   const handleNavigate = (module) => {
-    // Prevent staff from navigation into admin pages
-    if (user?.role === 'staff' && ['pricing', 'accounts', 'settings'].includes(module)) {
-      return;
-    }
+    const role = user?.role;
+    if (role === 'hk_staff' && module !== 'hk') return;
+    if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(module)) return;
+    if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(module)) return;
     setActiveModule(module);
   };
 

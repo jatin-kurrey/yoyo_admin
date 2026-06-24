@@ -18,12 +18,17 @@ export default function POSPage() {
   const [cart, setCart] = useState([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [guestName, setGuestName] = useState('');
+  const [menuSearch, setMenuSearch] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState(null);
 
   const filteredTables = posTables.filter(t => t.area === activeArea);
-  const filteredMenu = menuFilter === 'All' ? menuItems : menuItems.filter(m => m.category === menuFilter);
+  const filteredMenu = (menuFilter === 'All' ? menuItems : menuItems.filter(m => m.category === menuFilter))
+    .filter(m => !menuSearch || m.name.toLowerCase().includes(menuSearch.toLowerCase()));
 
   const handleTableClick = (table) => {
     setSelectedTable(table);
+    setMenuSearch('');
+    setSelectedRoom(null);
     if (table.status === 'vacant') {
       setCart([]);
       setGuestName('');
@@ -59,9 +64,8 @@ export default function POSPage() {
   const handleSendKOT = () => {
     if (cart.length === 0) return alert('Add items to order first');
     const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
-    dispatch({ type: 'UPDATE_TABLE_ORDER', payload: { tableId: selectedTable.id, kotDelta: 1, valueDelta: total } });
+    dispatch({ type: 'UPDATE_TABLE_ORDER', payload: { tableId: selectedTable.id, kotDelta: 1, valueDelta: total, items: cart } });
     setCart([]);
-    setShowOrderDrawer(false);
   };
 
   const handleGenerateBill = () => {
@@ -73,6 +77,7 @@ export default function POSPage() {
   const handleMoveToRoom = (roomNumber) => {
     dispatch({ type: 'MOVE_TO_ROOM', payload: { tableId: selectedTable.id, roomNumber } });
     setShowMoveModal(false);
+    setSelectedRoom(null);
     setCart([]);
     setShowOrderDrawer(false);
   };
@@ -154,7 +159,7 @@ export default function POSPage() {
               <div className="px-4 py-3 border-b border-slate-100">
                 <div className="relative mb-2">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="text" placeholder="Search menu..." className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50" />
+                  <input type="text" value={menuSearch} onChange={e => setMenuSearch(e.target.value)} placeholder="Search menu..." className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50" />
                 </div>
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {menuCategories.map((cat) => (
@@ -235,8 +240,8 @@ export default function POSPage() {
             <p className="text-[11px] text-slate-500 mb-3">Select in-house guest to transfer this bill to their room folio:</p>
             <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
               {checkedInBookings.map((b) => (
-                <div key={b.id} onClick={() => handleMoveToRoom(b.roomNumber)} className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50">
-                  <input type="radio" name="room" className="accent-emerald-500" readOnly checked={false} />
+                <div key={b.id} onClick={() => { setSelectedRoom(b.roomNumber); handleMoveToRoom(b.roomNumber); }} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-slate-50 ${selectedRoom === b.roomNumber ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}>
+                  <input type="radio" name="room" className="accent-emerald-500" readOnly checked={selectedRoom === b.roomNumber} />
                   <div>
                     <div className="text-xs font-medium text-slate-700">Room {b.roomNumber} — {b.guestName}</div>
                     <div className="text-[10px] text-slate-400">{b.pax} · {b.plan} · ₹{b.balance}</div>

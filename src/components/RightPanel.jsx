@@ -2,10 +2,18 @@ import { useApp } from '../store/AppContext';
 import { MoveRight } from 'lucide-react';
 
 export default function RightPanel() {
-  const { todayStats, housekeepingStats, posTables, dispatch, occupancyRate, totalRooms } = useApp();
+  const { todayStats, housekeepingStats, posTables, dispatch, occupancyRate, totalRooms, transactions } = useApp();
 
   const liveOrders = posTables.filter(t => t.status === 'occupied');
-  const cashPct = 45, upiPct = 35, cardPct = 20;
+  const paidTxns = transactions.filter(t => t.type === 'income' && t.status === 'completed');
+  const totalPaid = paidTxns.reduce((s, t) => s + t.amount, 0);
+  const hasPayments = totalPaid > 0;
+  const cashTotal = paidTxns.filter(t => t.method === 'Cash').reduce((s, t) => s + t.amount, 0);
+  const upiTotal = paidTxns.filter(t => t.method === 'UPI').reduce((s, t) => s + t.amount, 0);
+  const cardTotal = paidTxns.filter(t => t.method === 'Card' || t.method === 'Room Folio').reduce((s, t) => s + t.amount, 0);
+  const cashPct = hasPayments ? Math.round((cashTotal / totalPaid) * 100) : 0;
+  const upiPct = hasPayments ? Math.round((upiTotal / totalPaid) * 100) : 0;
+  const cardPct = hasPayments ? 100 - cashPct - upiPct : 0;
 
   const handleMoveToRoom = (tableId, tableNumber) => {
     const rooms = document.createElement('div');
@@ -84,7 +92,7 @@ export default function RightPanel() {
               <span className="font-semibold text-emerald-600">{housekeepingStats.clean}</span>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${totalRooms > 0 ? (housekeepingStats.clean / (housekeepingStats.clean + housekeepingStats.dirty)) * 100 : 80}%` }} />
+              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${totalRooms > 0 && (housekeepingStats.clean + housekeepingStats.dirty) > 0 ? (housekeepingStats.clean / (housekeepingStats.clean + housekeepingStats.dirty)) * 100 : 0}%` }} />
             </div>
           </div>
           <div className="flex-1">

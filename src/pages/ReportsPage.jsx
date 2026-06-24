@@ -3,17 +3,20 @@ import { Printer, Download, Mail, TrendingUp, Play, CheckCircle2 } from 'lucide-
 import { useApp } from '../store/AppContext';
 
 export default function ReportsPage() {
-  const { dailyRevenue, bookings, roomCategories, transactions, emailScheduler, dispatch } = useApp();
+  const { dailyRevenue, bookings, roomCategories, transactions, dispatch, defaultRules, showToast } = useApp();
   const [activeReport, setActiveReport] = useState('nightaudit');
-  const [scheduled, setScheduled] = useState(emailScheduler?.enabled || false);
-  const [email, setEmail] = useState(emailScheduler?.email || 'manager@yoyofun.in');
+  const [scheduled, setScheduled] = useState(false);
+  const [email, setEmail] = useState('manager@yoyofun.in');
   const [auditDone, setAuditDone] = useState(false);
+  const today = new Date();
+  const dateRange = `${today.getDate()} ${today.toLocaleString('en-IN', { month: 'short' })} ${today.getFullYear()}`;
+  const weekRange = `${dateRange} – ${new Date(today.getTime() + 6 * 86400000).getDate()} ${new Date(today.getTime() + 6 * 86400000).toLocaleString('en-IN', { month: 'short' })} ${today.getFullYear()}`;
 
   const totalRooms = roomCategories.reduce((s, c) => s + c.rooms.length, 0);
   const occupiedRooms = bookings.filter(b => b.status === 'checked-in').length;
   const occupancyPct = totalRooms > 0 ? Math.round(occupiedRooms / totalRooms * 100) : 0;
   const totalRev = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalTax = Math.round(totalRev * 0.12);
+  const totalTax = Math.round(totalRev * defaultRules.taxRate / 100);
   const totalDiscounts = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Math.round(t.amount * 0.03), 0);
   const netRev = totalRev - totalTax - totalDiscounts;
   const cashCollected = transactions.filter(t => t.method === 'Cash' && t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -27,7 +30,8 @@ export default function ReportsPage() {
   const handleExportCSV = () => {
     const headers = 'Date,Revenue,Occupancy%,ADR,RevPAR\n';
     const rows = dailyRevenue.map(d => {
-      const dayAdr = occupiedRooms > 0 ? Math.round(d.revenue / occupiedRooms) : 0;
+      const dayOccupied = Math.round(d.occupancy / 100 * totalRooms);
+      const dayAdr = dayOccupied > 0 ? Math.round(d.revenue / dayOccupied) : 0;
       const dayRevpar = Math.round(dayAdr * (d.occupancy / 100));
       return `${d.date},${d.revenue},${d.occupancy},${dayAdr},${dayRevpar}`;
     }).join('\n');
@@ -38,10 +42,11 @@ export default function ReportsPage() {
   };
 
   const handleNightAudit = () => {
-    if (window.confirm('Run Night Audit for 21 Dec 2026? This will finalize today\'s business and roll over to the next day.')) {
+    if (window.confirm(`Run Night Audit for ${dateRange}? This will finalize today's business and roll over to the next day.`)) {
       setAuditDone(true);
+      const todayISO = new Date().toISOString().slice(0, 10);
       dispatch({ type: 'ADD_TRANSACTION', payload: {
-        date: '21 Dec', type: 'income', category: 'Night Audit',
+        date: todayISO, type: 'income', category: 'Night Audit',
         description: 'Night Audit - Daily closing', amount: netRev,
         method: 'System', status: 'completed',
       }});
@@ -83,7 +88,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">Night Audit Summary</h3>
-                <p className="text-[11px] text-slate-500">21 Dec 2026</p>
+                <p className="text-[11px] text-slate-500">{dateRange}</p>
               </div>
               <div className="flex gap-2">
                 {auditDone && (
@@ -94,7 +99,7 @@ export default function ReportsPage() {
                 <button onClick={handleNightAudit} className="flex items-center gap-1 text-[10px] font-semibold text-white bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-700">
                   <Play size={12} /> Run Night Audit
                 </button>
-                <button className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 px-2.5 py-1.5 rounded hover:bg-blue-50 border border-blue-200"><Printer size={12} /> Print</button>
+                <button onClick={() => showToast('Printing night audit report')} className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 px-2.5 py-1.5 rounded hover:bg-blue-50 border border-blue-200"><Printer size={12} /> Print</button>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4 mb-4">
@@ -147,7 +152,7 @@ export default function ReportsPage() {
 
       {activeReport === 'revenue' && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-sm font-bold text-slate-800 mb-4">Room Revenue Report — 15–21 Dec 2026</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-4">Room Revenue Report — {weekRange}</h3>
           <div className="flex items-end gap-3 h-48">
             {dailyRevenue.map((d) => (
               <div key={d.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">

@@ -19,9 +19,16 @@ const initialState = {
   menuItems: fallbackMenuItems,
   pricingRates: fallbackPricing,
   stopSell: {},
+  dateRateOverrides: {},
   transactions: fallbackTxns,
   vouchers: fallbackVouchers,
   roles: fallbackRoles,
+  demoUsers: [
+    { id: 'demo_admin', name: 'Demo Admin', email: 'admin@yoyofun.in', password: 'admin123', role: 'admin', isActive: true },
+    { id: 'demo_staff', name: 'Demo Staff', email: 'staff@yoyofun.in', password: 'staff123', role: 'staff', isActive: true },
+    { id: 'demo_hk', name: 'Housekeeping Staff', email: 'hk@yoyofun.in', password: 'hk123', role: 'hk_staff', isActive: true },
+    { id: 'demo_booking', name: 'Booking Staff', email: 'booking@yoyofun.in', password: 'booking123', role: 'booking_staff', isActive: true },
+  ],
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
@@ -42,6 +49,10 @@ function reducer(state, action) {
     case 'CHECK_OUT': {
       const id = action.payload;
       return { ...state, bookings: state.bookings.map(b => (b.id === id || b.bookingRef === id) ? { ...b, status: 'checked-out' } : b) };
+    }
+    case 'CHECK_IN': {
+      const id = action.payload;
+      return { ...state, bookings: state.bookings.map(b => (b.id === id || b.bookingRef === id) ? { ...b, status: 'checked-in' } : b) };
     }
     case 'SET_ROOM_CLEAN': {
       const updated = state.roomStatuses.map(r => r.number === action.payload ? { ...r, cleanStatus: 'clean' } : r);
@@ -101,6 +112,18 @@ function reducer(state, action) {
       else current[dateIdx] = true;
       return { ...state, stopSell: { ...state.stopSell, [category]: current } };
     }
+    case 'SET_DATE_RATE': {
+      const { category, date, rates } = action.payload;
+      const catOverrides = { ...(state.dateRateOverrides[category] || {}) };
+      catOverrides[date] = rates;
+      return { ...state, dateRateOverrides: { ...state.dateRateOverrides, [category]: catOverrides } };
+    }
+    case 'CLEAR_DATE_RATE': {
+      const { category, date } = action.payload;
+      const catOverrides = { ...(state.dateRateOverrides[category] || {}) };
+      delete catOverrides[date];
+      return { ...state, dateRateOverrides: { ...state.dateRateOverrides, [category]: catOverrides } };
+    }
     case 'ADD_TRANSACTION':
       return { ...state, transactions: [{ id: `TXN${Date.now()}`, ...action.payload }, ...state.transactions] };
     case 'ADD_VOUCHER':
@@ -113,6 +136,12 @@ function reducer(state, action) {
       return { ...state, defaultRules: { ...state.defaultRules, ...action.payload } };
     case 'UPDATE_EMAIL_SCHEDULER':
       return { ...state, emailScheduler: { ...state.emailScheduler, ...action.payload } };
+    case 'ADD_DEMO_USER':
+      return { ...state, demoUsers: [...state.demoUsers, { id: `demo_${Date.now()}`, ...action.payload }] };
+    case 'UPDATE_DEMO_USER':
+      return { ...state, demoUsers: state.demoUsers.map(u => u.id === action.payload.id ? { ...u, ...action.payload } : u) };
+    case 'DELETE_DEMO_USER':
+      return { ...state, demoUsers: state.demoUsers.filter(u => u.id !== action.payload) };
     case 'RESET_DATA':
       return initialState;
     default:
@@ -160,8 +189,8 @@ export function AppProvider({ children }) {
             room_id: roomUUID,
             guest_name: data.guestName,
             guest_phone: data.mobile || '0000000000',
-            adults: parseInt(data.pax?.split('+')[0]) || 2,
-            children: parseInt(data.pax?.split('+')[1]) || 0,
+            adults: data.adults ?? (parseInt(data.pax?.split('+')[0]) || 2),
+            children: data.children ?? (parseInt(data.pax?.split('+')[1]) || 0),
             plan: data.plan || 'EP',
             source: data.source || 'Walk-In',
             check_in: data.checkIn,
@@ -193,6 +222,17 @@ export function AppProvider({ children }) {
           if (booking?.bookingRef && isUUID(booking.bookingRef)) {
             await pmsService.checkOut(booking.bookingRef);
             showToast('Guest checked out');
+          }
+          localDispatch();
+          return;
+        }
+
+        case 'CHECK_IN': {
+          const id = action.payload;
+          const booking = state.bookings.find(b => b.id === id || b.bookingRef === id);
+          if (booking?.bookingRef && isUUID(booking.bookingRef)) {
+            await pmsService.checkIn(booking.bookingRef);
+            showToast('Guest checked in');
           }
           localDispatch();
           return;
@@ -239,6 +279,32 @@ export function AppProvider({ children }) {
           return;
         }
 
+        case 'BULK_SET_CLEAN': {
+          const floorC = action.payload;
+          const roomsC = state.roomStatuses.filter(r => floorC === 'all' || r.floor === floorC);
+          await Promise.allSettled(roomsC.map(r => {
+            const uuid = roomUuidMap.current[r.number];
+            if (uuid) return pmsService.setRoomClean(uuid);
+            return Promise.resolve();
+          }));
+          localDispatch();
+          showToast(`${roomsC.length} rooms marked clean`);
+          return;
+        }
+
+        case 'BULK_SET_DIRTY': {
+          const floorD = action.payload;
+          const roomsD = state.roomStatuses.filter(r => floorD === 'all' || r.floor === floorD);
+          await Promise.allSettled(roomsD.map(r => {
+            const uuid = roomUuidMap.current[r.number];
+            if (uuid) return pmsService.setRoomDirty(uuid);
+            return Promise.resolve();
+          }));
+          localDispatch();
+          showToast(`${roomsD.length} rooms marked dirty`);
+          return;
+        }
+
         case 'OCCUPY_TABLE': {
           const { tableId, guestName } = action.payload;
           if (isUUID(tableId)) await pmsService.occupyTable(tableId, guestName);
@@ -274,6 +340,19 @@ export function AppProvider({ children }) {
         }
 
         case 'UPDATE_TABLE_ORDER': {
+          const { tableId, items } = action.payload;
+          if (isUUID(tableId) && items?.length) {
+            await Promise.allSettled(items.map(item =>
+              pmsService.addKOT(tableId, {
+                table_id: tableId,
+                menu_item_id: item.id || null,
+                item_name: item.name,
+                quantity: item.qty || 1,
+                price: item.price,
+                notes: item.notes || '',
+              })
+            ));
+          }
           localDispatch();
           return;
         }
@@ -288,14 +367,108 @@ export function AppProvider({ children }) {
           return;
         }
 
+        case 'ADD_TRANSACTION': {
+          const txData = action.payload;
+          const res = await pmsService.createTransaction({
+            date: txData.date || new Date().toISOString().slice(0, 10),
+            type: txData.type,
+            category: txData.category,
+            description: txData.description,
+            amount: txData.amount,
+            method: txData.method,
+            status: txData.status || 'completed',
+            guest_name: txData.guestName || '',
+          });
+          const newTx = res.data;
+          rawDispatch({
+            type: 'ADD_TRANSACTION',
+            payload: {
+              ...txData,
+              id: newTx?.id?.slice(0, 8) || txData.id,
+              date: newTx?.date || txData.date,
+            },
+          });
+          showToast('Transaction added');
+          return;
+        }
+
+        case 'UPDATE_EMAIL_SCHEDULER': {
+          const s = action.payload;
+          try { await pmsService.upsertSetting('email_scheduler', JSON.stringify(s)); } catch {}
+          localDispatch();
+          return;
+        }
+
+        case 'UPDATE_DEFAULT_RULES': {
+          const rules = action.payload;
+          try {
+            await Promise.allSettled(Object.entries(rules).map(([k, v]) =>
+              pmsService.upsertSetting(k, String(v))
+            ));
+          } catch {}
+          localDispatch();
+          showToast('Settings saved');
+          return;
+        }
+
+        case 'SET_DATE_RATE': {
+          const { category: catName, date, rates } = action.payload;
+          const cat = state.pricingRates.find(r => r.category === catName);
+          if (cat?.id) {
+            await Promise.allSettled(
+              ['ep', 'cp', 'ap']
+                .filter(p => rates[p] != null)
+                .map(p => pmsService.setRateOverride({ category_id: cat.id, date, plan: p, rate: rates[p] }))
+            );
+          }
+          localDispatch();
+          return;
+        }
+
+        case 'CLEAR_DATE_RATE': {
+          const { category: catName, date } = action.payload;
+          const cat = state.pricingRates.find(r => r.category === catName);
+          if (cat?.id) {
+            await Promise.allSettled(
+              ['ep', 'cp', 'ap'].map(p =>
+                pmsService.clearRateOverride({ category_id: cat.id, date, plan: p })
+              )
+            );
+          }
+          localDispatch();
+          return;
+        }
+
+        case 'TOGGLE_STOP_SELL': {
+          const { category: catName, dateIdx } = action.payload;
+          const cat = state.pricingRates.find(r => r.category === catName);
+          if (cat?.id && dates[dateIdx]) {
+            const isOn = state.stopSell?.[catName]?.[dateIdx];
+            await Promise.allSettled(
+              ['ep', 'cp', 'ap'].map(p =>
+                pmsService.setRateOverride({
+                  category_id: cat.id, date: dates[dateIdx], plan: p,
+                  stop_sell: !isOn,
+                })
+              )
+            );
+          }
+          localDispatch();
+          return;
+        }
+
         default:
           localDispatch();
       }
     } catch (err) {
+      if (err.status === 401) {
+        setUser(null);
+        return;
+      }
       localDispatch();
       showToast(err.message || 'Operation failed', 'error');
     }
-  }, [state, showToast]);
+  }, [state, showToast, setUser]);
 
   // Map roomId → room UUID from API
   const buildRoomMap = useCallback((rooms) => {
@@ -307,22 +480,43 @@ export function AppProvider({ children }) {
   // Load all data from API on mount
   useEffect(() => {
     async function loadAll() {
+      const currentToken = api.getToken();
+      
       try {
-        const token = api.getToken();
-        if (token) {
+        if (currentToken && !user) {
           const me = await api.getMe();
-          if (me.success) setUser(me.data);
+          if (me.success) { 
+            setUser(me.data); 
+            localStorage.setItem('yoyo_admin_user', JSON.stringify(me.data)); 
+          }
         }
       } catch {}
+
+      if (!currentToken && !user) {
+        try {
+          const cached = localStorage.getItem('yoyo_admin_user');
+          if (cached) setUser(JSON.parse(cached));
+        } catch {}
+      }
       setAuthChecked(true);
 
+      // If we don't have a token, do not call PMS endpoints to avoid 401 loops
+      if (!api.getToken()) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const [roomsRes, catsRes, bookingsRes, tablesRes, menuRes] = await Promise.allSettled([
+        const [roomsRes, catsRes, bookingsRes, tablesRes, menuRes, txnsRes, settingsRes, overridesRes, usersRes] = await Promise.allSettled([
           pmsService.getRooms(),
           pmsService.getCategories(),
           pmsService.getBookings({ limit: 100 }),
           pmsService.getPOSTables(),
           pmsService.getMenuItems(),
+          pmsService.getTransactions({}),
+          pmsService.getSettings(),
+          pmsService.getRateOverrides(),
+          api.admin.get('/users?limit=100'),
         ]);
 
         const apiRooms = roomsRes.status === 'fulfilled' ? roomsRes.value?.data || [] : [];
@@ -339,7 +533,7 @@ export function AppProvider({ children }) {
             rooms: apiRooms.filter(r => r.category_id === c.id).map(r => ({
               number: r.room_number,
               clean: r.clean_status === 'clean',
-              status: r.status === 'occupied' ? 'available' : r.status,
+              status: r.status,
             })),
           }));
           const statuses = apiRooms.map(r => ({
@@ -391,6 +585,50 @@ export function AppProvider({ children }) {
             veg: !item.category?.toLowerCase().includes('chicken') && !item.category?.toLowerCase().includes('non-veg'),
           }));
 
+          const apiTxns = txnsRes.status === 'fulfilled' ? txnsRes.value?.data || [] : [];
+          const transactions = apiTxns.length > 0 ? apiTxns.map(t => ({
+            id: t.id?.slice(0, 8) || `TXN${Date.now()}`,
+            date: t.date || new Date().toISOString().slice(0, 10),
+            type: t.type,
+            category: t.category,
+            description: t.description || '',
+            amount: t.amount,
+            method: t.method,
+            status: t.status,
+            guestName: t.guest_name || '',
+          })) : fallbackTxns;
+
+          const apiSettings = settingsRes.status === 'fulfilled' ? settingsRes.value?.data || {} : {};
+          const apiUsers = usersRes.status === 'fulfilled' ? usersRes.value?.data?.items || [] : [];
+          const apiOverrides = overridesRes.status === 'fulfilled' ? overridesRes.value?.data || [] : [];
+
+          const hkStaffList = apiUsers.filter(u => u.role === 'hk_staff').map(u => ({
+            id: u.id,
+            name: u.name,
+            status: 'available',
+            assignedRooms: [],
+          }));
+          const housekeepingStaff = hkStaffList.length > 0 ? hkStaffList : fallbackHKStaff;
+
+          const defaultRules = {
+            checkInTime: apiSettings.check_in_time || '12:00 PM',
+            checkOutTime: apiSettings.check_out_time || '10:00 AM',
+            holdExpiry: apiSettings.hold_expiry || '4 Hours',
+            currency: apiSettings.currency || 'INR',
+            taxRate: parseInt(apiSettings.tax_rate) || 12,
+            nightAuditTime: apiSettings.night_audit_time || '01:00 AM',
+          };
+
+          const overridesByDate = {};
+          apiOverrides.forEach(o => {
+            const catName = pricingRates.find(r => r.id === o.category_id)?.category;
+            if (!catName) return;
+            if (!overridesByDate[catName]) overridesByDate[catName] = {};
+            if (!overridesByDate[catName][o.date]) overridesByDate[catName][o.date] = {};
+            overridesByDate[catName][o.date][o.plan] = o.rate;
+          });
+          const dateRateOverrides = Object.keys(overridesByDate).length > 0 ? overridesByDate : {};
+
           rawDispatch({
             type: 'SET_INITIAL_DATA',
             payload: {
@@ -400,6 +638,10 @@ export function AppProvider({ children }) {
               bookings: bookings.length > 0 ? bookings : fallbackBookings,
               posTables: posTables.length > 0 ? posTables : fallbackPosTables,
               menuItems: menuItems.length > 0 ? menuItems : fallbackMenuItems,
+              transactions,
+              housekeepingStaff,
+              defaultRules,
+              dateRateOverrides,
             },
           });
         }
@@ -407,7 +649,7 @@ export function AppProvider({ children }) {
       setLoading(false);
     }
     loadAll();
-  }, [buildRoomMap]);
+  }, [user, buildRoomMap]);
 
   // Computed values
   const activeBookings = state.bookings.filter(b => b.status !== 'checked-out' && b.status !== 'cancelled');
@@ -418,19 +660,34 @@ export function AppProvider({ children }) {
   const vacantCount = totalRooms - occupiedCount - oooCount;
   const occupancyRate = totalRooms > 0 ? Math.round((occupiedCount / totalRooms) * 100) : 0;
 
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const yesterdayStr = new Date(today.getTime() - 86400000).toISOString().slice(0, 10);
+
   const totalRevenue = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpenses = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const todayIncome = state.transactions.filter(t => t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
-  const todayCollected = state.transactions.filter(t => t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
-  const todayDiscounts = state.transactions.filter(t => t.type === 'income' && t.status === 'completed').reduce((s, t) => s + Math.round(t.amount * 0.03), 0);
+  const todayIncome = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
+  const todayCollected = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
+  const todayDiscounts = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + Math.round(t.amount * 0.03), 0);
   const adr = occupiedCount > 0 ? Math.round(totalRevenue / occupiedCount) : 0;
   const revpar = Math.round(adr * (occupancyRate / 100));
-
-  const dates = ['2026-12-15', '2026-12-16', '2026-12-17', '2026-12-18', '2026-12-19', '2026-12-20', '2026-12-21'];
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+  const dayLabels = dates.map((d, i) => {
+    if (i === 0) return 'Today';
+    const dt = new Date(d + 'T00:00:00');
+    const day = dt.toLocaleDateString('en-IN', { weekday: 'short' });
+    const date = dt.getDate();
+    const mon = dt.toLocaleDateString('en-IN', { month: 'short' });
+    return `${day} ${date} ${mon}`;
+  });
 
   const todayStats = {
-    arrivals: state.bookings.filter(b => b.checkIn === dates[0] && b.status !== 'checked-out' && b.status !== 'cancelled').length,
-    departures: state.bookings.filter(b => b.checkOut === dates[0] || b.status === 'checked-out').length,
+    arrivals: state.bookings.filter(b => b.checkIn === todayStr && b.status !== 'checked-out' && b.status !== 'cancelled').length,
+    departures: state.bookings.filter(b => b.checkOut === todayStr && b.status !== 'cancelled').length,
     inHouse: occupiedCount, vacant: vacantCount, revenue: todayIncome, collected: todayCollected, discounts: todayDiscounts,
   };
 
@@ -440,9 +697,24 @@ export function AppProvider({ children }) {
     ooo: oooCount, vacant: vacantCount,
   };
 
+  const yesterdayIncome = state.transactions.filter(t => t.date === yesterdayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
+  const prevIncome = yesterdayIncome || todayIncome;
+  const revenueChange = prevIncome > 0 ? Math.round(((todayIncome - prevIncome) / prevIncome) * 100) : 0;
+  const prevOcc = yesterdayStr ? state.bookings.filter(b => yesterdayStr >= b.checkIn && yesterdayStr < b.checkOut).length : occupiedCount;
+  const occChange = prevOcc > 0 ? Math.round(((occupiedCount - prevOcc) / prevOcc) * 100) : 0;
+  const prevAdrValue = prevOcc > 0 ? Math.round((totalRevenue - todayIncome) / prevOcc) : adr;
+  const adrChange = prevAdrValue > 0 ? Math.round(((adr - prevAdrValue) / prevAdrValue) * 100) : 0;
+  const todayRevpar = Math.round(adr * (occupancyRate / 100));
+  const prevRevpar = prevOcc > 0 && prevAdrValue > 0 ? Math.round(prevAdrValue * ((prevOcc / totalRooms) * 100 / 100)) : todayRevpar;
+  const revparChange = prevRevpar > 0 ? Math.round(((todayRevpar - prevRevpar) / prevRevpar) * 100) : 0;
+  const todayExpenses = state.transactions.filter(t => t.date === todayStr && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const yesterdayExpenses = state.transactions.filter(t => t.date === yesterdayStr && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const prevExpenses = yesterdayExpenses || todayExpenses || 1;
+  const expensesChange = Math.round(((todayExpenses - prevExpenses) / prevExpenses) * 100);
+
   const dashboardKPI = {
     totalRevenue, occupancyRate, adr, revpar, totalExpenses,
-    revenueChange: 12.5, occupancyChange: 5.2, adrChange: -2.1,
+    revenueChange, occupancyChange: occChange, adrChange, revparChange, expensesChange,
   };
 
   const dailyRevenue = dates.map((d, i) => {
@@ -467,15 +739,21 @@ export function AppProvider({ children }) {
     table: t.number, items: t.kotCount || 0, room: null, guest: t.guestName, status: 'live',
   }));
 
+  const txVouchers = state.transactions.filter(t => t.guestName).map(t => ({
+    id: t.id, date: t.date, guest: t.guestName, type: t.category,
+    amount: t.amount, status: t.status === 'completed' ? 'generated' : 'pending',
+  }));
+  const vouchers = txVouchers.length > 0 ? txVouchers : state.vouchers;
+
   const value = {
     state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast,
     bookings: state.bookings, activeBookings, checkedInBookings,
     roomCategories: state.roomCategories, roomStatuses: state.roomStatuses,
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,
-    menuItems: state.menuItems, pricingRates: state.pricingRates, stopSell: state.stopSell,
-    transactions: state.transactions, vouchers: state.vouchers, roles: state.roles,
+    menuItems: state.menuItems, pricingRates: state.pricingRates, stopSell: state.stopSell, dateRateOverrides: state.dateRateOverrides,
+    transactions: state.transactions, vouchers, roles: state.roles, demoUsers: state.demoUsers,
     defaultRules: state.defaultRules, emailScheduler: state.emailScheduler,
-    todayStats, housekeepingStats, dashboardKPI, dailyRevenue, revenueBreakdown,
+    dates, dayLabels, todayStats, housekeepingStats, dashboardKPI, dailyRevenue, revenueBreakdown,
     posOrders, todayIncome, totalRooms, occupiedCount, vacantCount,
     occupancyRate, totalRevenue, totalExpenses, adr, revpar,
   };

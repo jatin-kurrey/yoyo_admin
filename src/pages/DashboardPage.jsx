@@ -12,11 +12,11 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-5 gap-4">
         {[
-          { label: 'Total Revenue', value: `₹${(totalRevenue / 1000).toFixed(1)}K`, change: `+${dashboardKPI.revenueChange}%`, icon: DollarSign, up: true, color: 'bg-blue-500' },
-          { label: 'Occupancy Rate', value: `${occupancyRate}%`, change: `+${dashboardKPI.occupancyChange}%`, icon: Hotel, up: true, color: 'bg-emerald-500' },
-          { label: 'ADR', value: `₹${adr}`, change: `${dashboardKPI.adrChange}%`, icon: Percent, up: false, color: 'bg-amber-500' },
-          { label: 'RevPAR', value: `₹${revpar}`, change: '+8.3%', icon: BarChart3, up: true, color: 'bg-purple-500' },
-          { label: 'Expenses', value: `₹${(totalExpenses / 1000).toFixed(1)}K`, change: '+2.1%', icon: Wallet, up: false, color: 'bg-red-500' },
+          { label: 'Total Revenue', value: `₹${(totalRevenue / 1000).toFixed(1)}K`, change: `${dashboardKPI.revenueChange >= 0 ? '+' : ''}${dashboardKPI.revenueChange}%`, icon: DollarSign, up: dashboardKPI.revenueChange >= 0, color: 'bg-blue-500' },
+          { label: 'Occupancy Rate', value: `${occupancyRate}%`, change: `${dashboardKPI.occupancyChange >= 0 ? '+' : ''}${dashboardKPI.occupancyChange}%`, icon: Hotel, up: dashboardKPI.occupancyChange >= 0, color: 'bg-emerald-500' },
+          { label: 'ADR', value: `₹${adr}`, change: `${dashboardKPI.adrChange >= 0 ? '+' : ''}${dashboardKPI.adrChange}%`, icon: Percent, up: dashboardKPI.adrChange >= 0, color: 'bg-amber-500' },
+          { label: 'RevPAR', value: `₹${revpar}`, change: `${dashboardKPI.revparChange >= 0 ? '+' : ''}${dashboardKPI.revparChange}%`, icon: BarChart3, up: dashboardKPI.revparChange >= 0, color: 'bg-purple-500' },
+          { label: 'Expenses', value: `₹${(totalExpenses / 1000).toFixed(1)}K`, change: `${dashboardKPI.expensesChange >= 0 ? '+' : ''}${dashboardKPI.expensesChange}%`, icon: Wallet, up: dashboardKPI.expensesChange <= 0, color: 'bg-red-500' },
         ].map((kpi) => {
           const Icon = kpi.icon;
           return (
@@ -42,7 +42,7 @@ export default function DashboardPage() {
             <div className="relative w-28 h-28">
               <svg viewBox="0 0 36 36" className="w-28 h-28 -rotate-90">
                 {revenueBreakdown.map((item, i) => {
-                  const total = revenueBreakdown.reduce((s, r) => s + r.value, 1);
+                  const total = revenueBreakdown.reduce((s, r) => s + r.value, 0);
                   const pct = item.value / total;
                   const circumference = 2 * Math.PI * 14;
                   const offset = revenueBreakdown.slice(0, i).reduce((s, r) => s + (r.value / total) * circumference, 0);

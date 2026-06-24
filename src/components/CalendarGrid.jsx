@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { Sparkles, MoreHorizontal, Search, Filter, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
@@ -38,8 +38,9 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const handleCheckOut = (bookingId) => {
     if (window.confirm('Check out this guest?')) {
       dispatch({ type: 'CHECK_OUT', payload: bookingId });
+      const todayStr = new Date().toISOString().slice(0, 10);
       dispatch({ type: 'ADD_TRANSACTION', payload: {
-        date: '21 Dec', type: 'income', category: 'Room Booking',
+        date: todayStr, type: 'income', category: 'Room Booking',
         description: 'Check-out settlement', amount: 0, method: 'Cash', status: 'completed',
       }});
     }
@@ -97,7 +98,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
           </thead>
           <tbody>
             {roomCategories.map((cat) => (
-              <>
+              <Fragment key={cat.name}>
                 {/* Category Header Row */}
                 <tr key={`cat-${cat.name}`} className="bg-slate-100/80">
                   <td className="px-4 py-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200" colSpan={dates.length + 1}>
@@ -184,7 +185,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
                     </tr>
                   );
                 })}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

@@ -16,11 +16,10 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
   const handleLogout = async () => {
     try {
       await api.logout();
-      setUser(null);
-      showToast('Logged out successfully.');
-    } catch (err) {
-      setUser(null);
-    }
+    } catch {}
+    setUser(null);
+    localStorage.removeItem('yoyo_admin_user');
+    showToast('Logged out successfully.');
   };
 
   const getInitials = (name, email) => {
@@ -38,15 +37,19 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
     if (role === 'super_admin') return 'Super Admin';
     if (role === 'admin') return 'Administrator';
     if (role === 'moderator') return 'Moderator';
+    if (role === 'hk_staff') return 'Housekeeping';
+    if (role === 'booking_staff') return 'Booking Staff';
     return 'Staff Member';
   };
 
   // Filter modules based on user role
-  const isStaff = user?.role === 'staff';
+  const role = user?.role;
+  const isStaff = role === 'staff' || role === 'booking_staff';
+  const isHKStaff = role === 'hk_staff';
   const filteredModules = modules.filter(mod => {
-    if (isStaff) {
-      return !['pricing', 'accounts', 'settings'].includes(mod.id);
-    }
+    if (isHKStaff) return mod.id === 'hk';
+    if (role === 'booking_staff') return ['calendar', 'roomview', 'reports'].includes(mod.id);
+    if (isStaff) return !['pricing', 'accounts', 'settings'].includes(mod.id);
     return true;
   });
 

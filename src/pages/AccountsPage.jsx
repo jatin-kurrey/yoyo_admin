@@ -3,11 +3,11 @@ import { ArrowDownRight, ArrowUpRight, Download, FileText, Plus } from 'lucide-r
 import { useApp } from '../store/AppContext';
 
 export default function AccountsPage() {
-  const { transactions, vouchers, dispatch } = useApp();
+  const { transactions, vouchers, dispatch, showToast } = useApp();
   const [activeTab, setActiveTab] = useState('transactions');
   const [txFilter, setTxFilter] = useState('all');
   const [showAddTx, setShowAddTx] = useState(false);
-  const [newTx, setNewTx] = useState({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: '21 Dec' });
+  const [newTx, setNewTx] = useState({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: new Date().toISOString().slice(0, 10) });
 
   const filteredTx = transactions.filter(t => {
     if (txFilter === 'income') return t.type === 'income';
@@ -23,7 +23,7 @@ export default function AccountsPage() {
     if (!newTx.description.trim() || !newTx.amount) return alert('Fill description and amount');
     dispatch({ type: 'ADD_TRANSACTION', payload: { ...newTx, id: `TXN${Date.now()}`, status: 'completed' } });
     setShowAddTx(false);
-    setNewTx({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: '21 Dec' });
+    setNewTx({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: new Date().toISOString().slice(0, 10) });
   };
 
   const handleExportCSV = () => {
@@ -139,9 +139,9 @@ export default function AccountsPage() {
                 <div className="text-sm font-bold text-slate-800">₹{v.amount.toLocaleString()}</div>
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                <button className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">View</button>
-                <button className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Print</button>
-                <button className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Email</button>
+                <button onClick={() => showToast(`Viewing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">View</button>
+                <button onClick={() => showToast(`Printing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Print</button>
+                <button onClick={() => showToast(`Emailing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Email</button>
               </div>
             </div>
           ))}

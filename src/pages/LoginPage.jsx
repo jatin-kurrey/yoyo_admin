@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { Lock, Mail, Eye, EyeOff, Loader2, ShieldAlert } from 'lucide-react';
 
 export default function LoginPage() {
-  const { setUser, showToast } = useApp();
+  const { setUser, showToast, demoUsers } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,20 +21,14 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // Demo/Mock credentials bypass
-    if (email === 'admin@yoyofun.in' && password === 'admin123') {
+    // Demo credentials from context
+    const demoEntry = demoUsers.find(d => d.email === email);
+    if (demoEntry && demoEntry.password === password) {
       setTimeout(() => {
-        setUser({ name: 'Demo Admin', email: 'admin@yoyofun.in', role: 'admin' });
-        showToast('Logged in as Demo Admin (Bypassed)');
-        setLoading(false);
-      }, 800);
-      return;
-    }
-    
-    if (email === 'staff@yoyofun.in' && password === 'staff123') {
-      setTimeout(() => {
-        setUser({ name: 'Demo Staff', email: 'staff@yoyofun.in', role: 'staff' });
-        showToast('Logged in as Demo Staff (Bypassed)');
+        const u = { name: demoEntry.name, email: demoEntry.email, role: demoEntry.role };
+        setUser(u);
+        localStorage.setItem('yoyo_admin_user', JSON.stringify(u));
+        showToast(`Logged in as ${demoEntry.name} (Local)`);
         setLoading(false);
       }, 800);
       return;
@@ -44,12 +38,14 @@ export default function LoginPage() {
       const res = await api.login(email, password);
       if (res.success) {
         showToast('Login successful! Welcome back.');
-        // Fetch full user details to populate context state
         const me = await api.getMe();
         if (me.success) {
           setUser(me.data);
+          localStorage.setItem('yoyo_admin_user', JSON.stringify(me.data));
         } else {
-          setUser({ email, role: 'staff' }); // fallback
+          const fallback = { name: email.split('@')[0], email, role: 'staff' };
+          setUser(fallback);
+          localStorage.setItem('yoyo_admin_user', JSON.stringify(fallback));
         }
       } else {
         setError(res.message || 'Invalid email or password.');
@@ -156,25 +152,20 @@ export default function LoginPage() {
             <span>Demo Console Logins (Click to autofill)</span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleFillDemo('admin@yoyofun.in', 'admin123')}
-              className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
-            >
-              <div className="text-[10px] font-semibold text-emerald-400 group-hover:text-emerald-300">Admin Account</div>
-              <div className="text-[9px] text-slate-500 mt-0.5 truncate">admin@yoyofun.in</div>
-              <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: admin123</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillDemo('staff@yoyofun.in', 'staff123')}
-              className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
-            >
-              <div className="text-[10px] font-semibold text-blue-400 group-hover:text-blue-300">Staff Account</div>
-              <div className="text-[9px] text-slate-500 mt-0.5 truncate">staff@yoyofun.in</div>
-              <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: staff123</div>
-            </button>
+            {demoUsers.filter(u => u.isActive).map((du) => {
+              const roleColors = { super_admin: 'text-emerald-400', admin: 'text-emerald-400', staff: 'text-blue-400', hk_staff: 'text-purple-400', booking_staff: 'text-cyan-400' };
+              const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', staff: 'Staff', hk_staff: 'Housekeeping', booking_staff: 'Booking Staff' };
+              return (
+                <button key={du.id} type="button"
+                  onClick={() => handleFillDemo(du.email, du.password)}
+                  className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
+                >
+                  <div className={`text-[10px] font-semibold ${roleColors[du.role] || 'text-slate-400'} group-hover:opacity-80`}>{roleLabels[du.role] || du.role}</div>
+                  <div className="text-[9px] text-slate-500 mt-0.5 truncate">{du.email}</div>
+                  <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: {du.password}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

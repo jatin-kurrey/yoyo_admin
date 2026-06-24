@@ -1,35 +1,60 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { X, User, Phone, Calendar } from 'lucide-react';
 import { useApp } from '../store/AppContext';
-import { dates } from '../data/mockData';
 
 export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
-  const { dispatch, roomCategories } = useApp();
+  const { dispatch, roomCategories, pricingRates, dates } = useApp();
+
+  const CATEGORY_MAP = {
+    'Super Deluxe': 'SUPER DELUXE ROOMS',
+    'Family Suite': 'FAMILY SUITES',
+    'Executive Pack': 'EXECUTIVE PACK',
+  };
 
   const findCategoryForRoom = (num) => {
     for (const cat of roomCategories) {
-      if (cat.rooms.some(r => r.number === num)) return cat.name.replace(' ROOMS', '').replace(' SUITES', ' Suite');
+      const entry = Object.entries(CATEGORY_MAP).find(([, v]) => v === cat.name);
+      if (entry && cat.rooms.some(r => r.number === num)) return entry[0];
     }
     return 'Super Deluxe';
   };
 
+  const getRate = useCallback((category, plan) => {
+    const pr = pricingRates.find(r => r.category.toLowerCase() === category.toLowerCase());
+    if (!pr) return 4000;
+    const key = plan.toLowerCase();
+    return pr[key] || pr.baseRate || pr.ep || 4000;
+  }, [pricingRates]);
+
+  const defaultCategory = prefillRoom ? findCategoryForRoom(prefillRoom) : 'Super Deluxe';
+
   const [form, setForm] = useState({
-    guestName: '', mobile: '', category: prefillRoom ? findCategoryForRoom(prefillRoom) : 'Super Deluxe',
+    guestName: '', mobile: '', category: defaultCategory,
     checkIn: prefillDate || dates[0], checkOut: (() => {
       const d = new Date(prefillDate || dates[0]);
       d.setDate(d.getDate() + 1);
       return d.toISOString().slice(0, 10);
     })(),
     adults: 2, children: 0, plan: 'EP', source: 'Walk-In',
-    rate: 4000,
+    rate: getRate(defaultCategory, 'EP'),
   });
+
+  const updateForm = (updates) => {
+    const next = { ...form, ...updates };
+    if (updates.category || updates.plan) {
+      next.rate = getRate(next.category, next.plan);
+    }
+    setForm(next);
+  };
+
   const [payment, setPayment] = useState({ mode: 'Cash', amount: 0 });
 
-  const cat = roomCategories.find(c => c.name.toUpperCase().includes(form.category.toUpperCase().replace(' Suite', ' SUITE').split(' ')[0]));
+  const catName = CATEGORY_MAP[form.category] || 'SUPER DELUXE ROOMS';
+  const cat = roomCategories.find(c => c.name === catName);
   const availableRooms = cat ? cat.rooms.filter(r => r.status === 'available') : [];
   const nights = Math.max(1, Math.round((new Date(form.checkOut) - new Date(form.checkIn)) / (1000 * 60 * 60 * 24)));
   const extraAdults = Math.max(0, form.adults - 2);
-  const tax = Math.round(form.rate * 0.12);
+  const tax = Math.round(form.rate * nights * 0.12);
   const total = form.rate * nights + extraAdults * 500 + tax;
 
   const handleSubmit = () => {
@@ -43,9 +68,13 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
       payload: {
         roomNumber,
         guestName: form.guestName,
+        mobile: form.mobile,
+        adults: form.adults,
+        children: form.children,
         pax: `${form.adults}+${form.children}`,
         plan: form.plan,
         source: form.source,
+        rate: form.rate,
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         balance: total - (payment.amount || 0),
@@ -55,7 +84,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
 
     if (payment.amount > 0) {
       dispatch({ type: 'ADD_TRANSACTION', payload: {
-        date: form.checkIn.slice(5), type: 'income', category: 'Room Booking',
+        date: form.checkIn, type: 'income', category: 'Room Booking',
         description: `${form.guestName} - Advance Payment`, amount: payment.amount,
         method: payment.mode, status: 'completed',
       }});
@@ -95,7 +124,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Category</label>
-              <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
+              <select value={form.category} onChange={e => updateForm({category: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
                 <option>Super Deluxe</option><option>Family Suite</option><option>Executive Pack</option>
               </select>
             </div>
@@ -121,7 +150,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
             <div><label className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Children</label>
               <select value={form.children} onChange={e => setForm({...form, children: +e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">{[0,1,2,3].map(n => <option key={n}>{n}</option>)}</select></div>
             <div><label className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Plan</label>
-              <select value={form.plan} onChange={e => setForm({...form, plan: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"><option>EP</option><option>CP</option><option>AP</option></select></div>
+              <select value={form.plan} onChange={e => updateForm({plan: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"><option>EP</option><option>CP</option><option>AP</option></select></div>
             <div><label className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Source</label>
               <select value={form.source} onChange={e => setForm({...form, source: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"><option>Walk-In</option><option>Agoda</option><option>MakeMyTrip</option><option>Booking.com</option><option>Corporate</option></select></div>
           </div>
