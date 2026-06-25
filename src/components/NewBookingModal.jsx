@@ -6,9 +6,9 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
   const { dispatch, roomCategories, pricingRates, dates } = useApp();
 
   const CATEGORY_MAP = {
-    'Super Deluxe': 'SUPER DELUXE ROOMS',
-    'Family Suite': 'FAMILY SUITES',
-    'Executive Pack': 'EXECUTIVE PACK',
+    'Water Park Cottage': 'WATER PARK COTTAGES',
+    'Premium Villa': 'PREMIUM VILLAS',
+    'Standard Room': 'STANDARD ROOMS',
   };
 
   const normalize = (name) => {
@@ -136,7 +136,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
             <div>
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Category</label>
               <select value={form.category} onChange={e => updateForm({category: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
-                <option>Super Deluxe</option><option>Family Suite</option><option>Executive Pack</option>
+                <option>Water Park Cottage</option><option>Premium Villa</option><option>Standard Room</option>
               </select>
             </div>
             <div>

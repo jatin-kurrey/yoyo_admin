@@ -11,9 +11,9 @@ const RANGE_OPTIONS = [
 ];
 
 const categoryColors = {
-  'Super Deluxe': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', cell: 'bg-blue-100' },
-  'Family Suite': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', cell: 'bg-purple-100' },
-  'Executive Pack': { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', cell: 'bg-amber-100' },
+  'Water Park Cottage': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', cell: 'bg-blue-100' },
+  'Premium Villa': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', cell: 'bg-purple-100' },
+  'Standard Room': { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', cell: 'bg-amber-100' },
 };
 
 export default function PricingPage() {
@@ -303,7 +303,7 @@ export default function PricingPage() {
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Agoda — Connected</div>
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> MakeMyTrip — Connected</div>
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Booking.com — Connected</div>
-          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Expedia — Syncing...</div>
+          <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Goibibo — Syncing...</div>
           <span className="text-emerald-600 font-semibold text-[10px] ml-auto">Last sync: Live</span>
         </div>
       </div>

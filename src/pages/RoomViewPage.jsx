@@ -66,8 +66,8 @@ export default function RoomViewPage() {
           const booking = bookings.find(b => b.roomNumber === room.number && b.status === 'checked-in');
           const occupied = isOccupied(room);
           const ooo = isOOO(room);
-          const cc = room.category === 'SUPER DELUXE ROOMS' ? { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' }
-            : room.category === 'FAMILY SUITES' ? { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' }
+          const cc = room.category === 'WATER PARK COTTAGES' ? { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' }
+            : room.category === 'PREMIUM VILLAS' ? { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' }
             : { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' };
 
           return (

@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { Bell, Plus, ChefHat, ChevronDown, X } from 'lucide-react';
+import { Bell, Plus, ChefHat, ChevronDown } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
 export default function Header({ onNewBooking, onNavigate }) {
-  const { roomStatuses, dispatch } = useApp();
+  const { roomStatuses, dispatch, dates } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const dateRange = dates.length >= 2
+    ? `${dates[0].slice(5)} – ${dates[dates.length - 1].slice(5)} ${dates[0].slice(0, 4)}`
+    : '';
 
   const notifications = [];
   (roomStatuses || []).forEach(r => {
@@ -37,16 +41,16 @@ export default function Header({ onNewBooking, onNavigate }) {
   return (
     <header className="h-[60px] min-h-[60px] bg-white border-b border-slate-200 flex items-center px-5 gap-4 z-20 shrink-0">
       <div className="flex items-center gap-2 cursor-pointer group">
-        <span className="text-sm font-semibold text-slate-700">Main Beach Resort</span>
+        <span className="text-sm font-semibold text-slate-700">YOYO Fun N Foods Resort</span>
         <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
       </div>
       <div className="w-px h-6 bg-slate-200" />
       <div className="text-xs text-slate-500 font-medium">
-        <span className="text-slate-700">Shift A</span> · 06:00 – 14:00
+        <span className="text-slate-700">Front Desk</span>
       </div>
       <div className="w-px h-6 bg-slate-200" />
       <div className="text-xs text-slate-600 font-medium bg-slate-100 px-3 py-1.5 rounded-md">
-        15 Dec 2026 – 21 Dec 2026
+        {dateRange}
       </div>
       <div className="flex-1" />
       <div className="flex items-center gap-2.5">
