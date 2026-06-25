@@ -47,7 +47,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     setForm(next);
   };
 
-  const [payment, setPayment] = useState({ mode: 'Cash', amount: 0 });
+  const [payment, setPayment] = useState({ mode: 'Cash', amount: '' });
 
   const catName = CATEGORY_MAP[form.category] || 'SUPER DELUXE ROOMS';
   const cat = roomCategories.find(c => c.name === catName);
@@ -178,7 +178,10 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
                 </div>
               ))}
             </div>
-            <input type="number" value={payment.amount} onChange={e => setPayment({...payment, amount: +e.target.value})} placeholder="Advance amount..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+            <input type="number" value={payment.amount} onChange={e => {
+              const val = e.target.value;
+              setPayment({...payment, amount: val === '' ? '' : Number(val)});
+            }} placeholder="Advance amount..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
           </div>
         </div>
 

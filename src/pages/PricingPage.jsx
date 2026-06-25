@@ -315,11 +315,20 @@ export default function PricingPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div><label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">EP Rate</label>
-                  <input type="number" value={epRate} onChange={e => setEpRate(+e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
+                  <input type="number" value={epRate} onChange={e => {
+                    const val = e.target.value;
+                    setEpRate(val === '' ? '' : Number(val));
+                  }} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
                 <div><label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">CP Rate</label>
-                  <input type="number" value={cpRate} onChange={e => setCpRate(+e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
+                  <input type="number" value={cpRate} onChange={e => {
+                    const val = e.target.value;
+                    setCpRate(val === '' ? '' : Number(val));
+                  }} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
                 <div><label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">AP Rate</label>
-                  <input type="number" value={apRate} onChange={e => setApRate(+e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
+                  <input type="number" value={apRate} onChange={e => {
+                    const val = e.target.value;
+                    setApRate(val === '' ? '' : Number(val));
+                  }} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" /></div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-slate-200">

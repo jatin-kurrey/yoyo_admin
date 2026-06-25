@@ -7,7 +7,7 @@ export default function AccountsPage() {
   const [activeTab, setActiveTab] = useState('transactions');
   const [txFilter, setTxFilter] = useState('all');
   const [showAddTx, setShowAddTx] = useState(false);
-  const [newTx, setNewTx] = useState({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: new Date().toISOString().slice(0, 10) });
+  const [newTx, setNewTx] = useState({ type: 'income', category: 'Room Booking', description: '', amount: '', method: 'Cash', date: new Date().toISOString().slice(0, 10) });
 
   const filteredTx = transactions.filter(t => {
     if (txFilter === 'income') return t.type === 'income';
@@ -23,7 +23,7 @@ export default function AccountsPage() {
     if (!newTx.description.trim() || !newTx.amount) return alert('Fill description and amount');
     dispatch({ type: 'ADD_TRANSACTION', payload: { ...newTx, id: `TXN${Date.now()}`, status: 'completed' } });
     setShowAddTx(false);
-    setNewTx({ type: 'income', category: 'Room Booking', description: '', amount: 0, method: 'Cash', date: new Date().toISOString().slice(0, 10) });
+    setNewTx({ type: 'income', category: 'Room Booking', description: '', amount: '', method: 'Cash', date: new Date().toISOString().slice(0, 10) });
   };
 
   const handleExportCSV = () => {
@@ -175,7 +175,10 @@ export default function AccountsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Amount (₹)</label>
-                  <input type="number" value={newTx.amount} onChange={e => setNewTx({...newTx, amount: +e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+                  <input type="number" value={newTx.amount} onChange={e => {
+                    const val = e.target.value;
+                    setNewTx({...newTx, amount: val === '' ? '' : Number(val)});
+                  }} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-slate-500 uppercase mb-1 block">Method</label>
