@@ -24,10 +24,10 @@ const initialState = {
   vouchers: fallbackVouchers,
   roles: fallbackRoles,
   demoUsers: [
-    { id: 'demo_admin', name: 'Demo Admin', email: 'admin@yoyofun.in', password: 'admin123', role: 'admin', isActive: true },
-    { id: 'demo_staff', name: 'Demo Staff', email: 'staff@yoyofun.in', password: 'staff123', role: 'staff', isActive: true },
-    { id: 'demo_hk', name: 'Housekeeping Staff', email: 'hk@yoyofun.in', password: 'hk123', role: 'hk_staff', isActive: true },
-    { id: 'demo_booking', name: 'Booking Staff', email: 'booking@yoyofun.in', password: 'booking123', role: 'booking_staff', isActive: true },
+    { id: 'demo_super', name: 'Super Admin', email: 'admin@yoyofun.in', password: 'change_this_to_strong_admin_password', role: 'super_admin', isActive: true },
+    { id: 'demo_admin', name: 'Demo Admin', email: 'admin@yoyo.com', password: 'admin123', role: 'admin', isActive: true },
+    { id: 'demo_booking', name: 'Booking Staff', email: 'priya@yoyo.com', password: 'admin123', role: 'booking_staff', isActive: true },
+    { id: 'demo_hk', name: 'Housekeeping Staff', email: 'rajesh@yoyo.com', password: 'admin123', role: 'hk_staff', isActive: true },
   ],
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
