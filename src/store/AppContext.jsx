@@ -394,6 +394,7 @@ export function AppProvider({ children }) {
             showToast('Payment recorded');
           }
           localDispatch();
+          refreshData();
           return;
         }
 
@@ -405,6 +406,7 @@ export function AppProvider({ children }) {
             showToast('Guest checked out');
           }
           localDispatch();
+          refreshData();
           return;
         }
 
@@ -416,6 +418,7 @@ export function AppProvider({ children }) {
             showToast('Guest checked in');
           }
           localDispatch();
+          refreshData();
           return;
         }
 

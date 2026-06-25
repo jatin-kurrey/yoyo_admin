@@ -64,11 +64,12 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
     }
   };
 
-  const handleCheckoutConfirm = () => {
+  const handleCheckoutConfirm = async () => {
     if (!checkoutConfirm) return;
-    dispatch({ type: 'CHECK_OUT', payload: checkoutConfirm.id });
+    await dispatch({ type: 'CHECK_OUT', payload: checkoutConfirm.id });
     setInvoiceBooking({
       ...checkoutConfirm,
+      status: 'checked-out',
       advancePaid: checkoutConfirm.advancePaid || 0,
       checkoutPaid: 0,
       totalPaid: checkoutConfirm.advancePaid || 0,
@@ -77,12 +78,12 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
     setCheckoutConfirm(null);
   };
 
-  const handleSettlementSubmit = () => {
+  const handleSettlementSubmit = async () => {
     if (!settlementBooking) return;
     const amount = Number(settlementAmount) || 0;
     
     if (amount > 0) {
-      dispatch({
+      await dispatch({
         type: 'ADD_PAYMENT',
         payload: {
           bookingId: settlementBooking.id,
@@ -93,7 +94,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
       });
 
       const todayStr = new Date().toISOString().slice(0, 10);
-      dispatch({
+      await dispatch({
         type: 'ADD_TRANSACTION',
         payload: {
           date: todayStr,
@@ -101,19 +102,20 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
           category: 'Room Booking',
           description: `Check-out settlement - Room ${settlementBooking.roomNumber} (${settlementBooking.guestName})`,
           amount: amount,
-          method: settlementMode,
+          mode: settlementMode,
           status: 'completed',
           guestName: settlementBooking.guestName,
         }
       });
     }
 
-    dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
+    await dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
 
     // Show invoice after settlement checkout
     const totalPaid = (settlementBooking.advancePaid || 0) + amount;
     setInvoiceBooking({
       ...settlementBooking,
+      status: 'checked-out',
       advancePaid: settlementBooking.advancePaid || 0,
       checkoutPaid: amount,
       totalPaid,
