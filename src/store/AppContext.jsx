@@ -44,6 +44,13 @@ function reducer(state, action) {
       return { ...state, bookings: [...state.bookings, action.payload] };
     case 'UPDATE_BOOKING':
       return { ...state, bookings: state.bookings.map(b => (b.id === action.payload.id || b.bookingRef === action.payload.id) ? { ...b, ...action.payload } : b) };
+    case 'ADD_PAYMENT': {
+      const { bookingId, amount } = action.payload;
+      return {
+        ...state,
+        bookings: state.bookings.map(b => (b.id === bookingId || b.bookingRef === bookingId) ? { ...b, balance: Math.max(0, b.balance - amount) } : b)
+      };
+    }
     case 'DELETE_BOOKING':
       return { ...state, bookings: state.bookings.filter(b => b.id !== action.payload && b.bookingRef !== action.payload) };
     case 'CHECK_OUT': {
@@ -193,7 +200,7 @@ export function AppProvider({ children }) {
             children: data.children ?? (parseInt(data.pax?.split('+')[1]) || 0),
             plan: data.plan || 'EP',
             source: data.source || 'Walk-In',
-            check_in: `${data.checkIn}T00:00:00Z`,
+             check_in: `${data.checkIn}T00:00:00Z`,
             check_out: `${data.checkOut}T00:00:00Z`,
             rate_per_night: data.rate || 4000,
           });
@@ -213,6 +220,22 @@ export function AppProvider({ children }) {
           };
           rawDispatch({ type: 'ADD_BOOKING', payload: booking });
           showToast('Booking created');
+          return;
+        }
+
+        case 'ADD_PAYMENT': {
+          const { bookingId, amount, mode, type } = action.payload;
+          const booking = state.bookings.find(b => b.id === bookingId || b.bookingRef === bookingId);
+          if (booking?.bookingRef && isUUID(booking.bookingRef)) {
+            await pmsService.addPayment(booking.bookingRef, {
+              booking_id: booking.bookingRef,
+              amount: parseInt(amount) || 0,
+              mode: mode || 'Cash',
+              type: type || 'settlement',
+            });
+            showToast('Payment recorded');
+          }
+          localDispatch();
           return;
         }
 

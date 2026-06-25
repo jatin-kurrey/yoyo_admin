@@ -14,6 +14,9 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [settlementBooking, setSettlementBooking] = useState(null);
+  const [settlementAmount, setSettlementAmount] = useState('');
+  const [settlementMode, setSettlementMode] = useState('Cash');
 
   const filteredBookings = useMemo(() => {
     return (bookings || []).filter(b => {
@@ -36,14 +39,57 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   };
 
   const handleCheckOut = (bookingId) => {
-    if (window.confirm('Check out this guest?')) {
-      dispatch({ type: 'CHECK_OUT', payload: bookingId });
-      const todayStr = new Date().toISOString().slice(0, 10);
-      dispatch({ type: 'ADD_TRANSACTION', payload: {
-        date: todayStr, type: 'income', category: 'Room Booking',
-        description: 'Check-out settlement', amount: 0, method: 'Cash', status: 'completed',
-      }});
+    const booking = bookings.find(b => b.id === bookingId || b.bookingRef === bookingId);
+    if (!booking) return;
+    if (booking.balance > 0) {
+      setSettlementBooking(booking);
+      setSettlementAmount(booking.balance);
+      setSettlementMode('Cash');
+    } else {
+      if (window.confirm('Check out this guest?')) {
+        dispatch({ type: 'CHECK_OUT', payload: bookingId });
+      }
     }
+  };
+
+  const handleSettlementSubmit = () => {
+    if (!settlementBooking) return;
+    const amount = Number(settlementAmount) || 0;
+    
+    // 1. Record the payment to update the booking balance on the server/state
+    if (amount > 0) {
+      dispatch({
+        type: 'ADD_PAYMENT',
+        payload: {
+          bookingId: settlementBooking.id,
+          amount: amount,
+          mode: settlementMode,
+          type: 'settlement'
+        }
+      });
+
+      // 2. Add transaction record
+      const todayStr = new Date().toISOString().slice(0, 10);
+      dispatch({
+        type: 'ADD_TRANSACTION',
+        payload: {
+          date: todayStr,
+          type: 'income',
+          category: 'Room Booking',
+          description: `Check-out settlement - Room ${settlementBooking.roomNumber} (${settlementBooking.guestName})`,
+          amount: amount,
+          method: settlementMode,
+          status: 'completed',
+          guestName: settlementBooking.guestName,
+        }
+      });
+    }
+
+    // 3. Trigger actual Checkout
+    dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
+
+    // 4. Close modal
+    setSettlementBooking(null);
   };
 
   const handleDelete = (bookingId) => {
@@ -190,6 +236,48 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
           </tbody>
         </table>
       </div>
+
+      {settlementBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSettlementBooking(null)}>
+          <div className="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <h3 className="text-sm font-bold text-slate-800">Checkout Settlement — Room {settlementBooking.roomNumber}</h3>
+              <button onClick={() => setSettlementBooking(null)} className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"><X size={16} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <div className="text-xs text-slate-500 font-medium">Guest Name</div>
+                <div className="text-sm font-semibold text-slate-800">{settlementBooking.guestName}</div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex justify-between items-center">
+                <span className="text-xs text-amber-800 font-medium">Outstanding Balance</span>
+                <span className="text-base font-bold text-amber-600">₹{settlementBooking.balance}</span>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Settlement Payment Mode</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Cash', 'UPI', 'Card'].map(mode => (
+                    <button key={mode} type="button" onClick={() => setSettlementMode(mode)}
+                      className={`flex items-center justify-center border rounded-lg px-3 py-2 cursor-pointer transition-colors text-xs font-semibold ${
+                        settlementMode === mode ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
+                      }`}>
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Amount Paid</label>
+                <input type="number" value={settlementAmount} onChange={e => setSettlementAmount(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setSettlementBooking(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+              <button onClick={handleSettlementSubmit} className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">Receive & Check-out</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
