@@ -345,6 +345,11 @@ export function AppProvider({ children }) {
             checkOut: b.check_out?.slice(0, 10),
             balance: b.balance_amount,
             status: b.status,
+            rate: b.rate_per_night,
+            total: b.total_amount,
+            paid: b.paid_amount,
+            tax: b.tax,
+            discount: b.discount,
           };
           rawDispatch({ type: 'ADD_BOOKING', payload: booking });
           showToast('Booking created');
@@ -755,6 +760,11 @@ export function AppProvider({ children }) {
             checkOut: b.check_out?.slice(0, 10),
             balance: b.balance_amount,
             status: b.status,
+            rate: b.rate_per_night,
+            total: b.total_amount,
+            paid: b.paid_amount,
+            tax: b.tax,
+            discount: b.discount,
           }))
         : fallbackBookings;
 

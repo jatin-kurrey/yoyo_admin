@@ -22,12 +22,20 @@ export default function InvoiceModal({ data, type, onClose }) {
   const invoiceDate = data?.date || today.toLocaleDateString('en-IN');
 
   const taxRate = defaultRules?.taxRate || 12;
-  const subtotal = data?.total || data?.amount || 0;
+  
+  let stayNights = 1;
+  if (data?.checkIn && data?.checkOut) {
+    stayNights = Math.max(1, Math.round((new Date(data.checkOut) - new Date(data.checkIn)) / (1000 * 60 * 60 * 24)));
+  }
+  const calculatedRoomCharges = (data?.rate || 4000) * stayNights;
+  const subtotal = data?.total || data?.amount || calculatedRoomCharges;
+
   const taxAmt = Math.round(subtotal * taxRate / 100);
   const grandTotal = subtotal + taxAmt;
-  const advancePaid = data?.advancePaid || 0;
-  const checkoutPaid = data?.checkoutPaid || 0;
-  const totalPaid = data?.totalPaid || (advancePaid + checkoutPaid) || data?.paid || 0;
+  
+  const totalPaid = data?.paid || 0;
+  const advancePaid = data?.status === 'checked-in' ? totalPaid : (data?.advancePaid || (totalPaid - (data?.checkoutPaid || 0)));
+  const checkoutPaid = data?.status === 'checked-out' ? (data?.checkoutPaid || (totalPaid - advancePaid)) : 0;
   const balanceAmt = Math.max(0, grandTotal - totalPaid);
 
   const handlePrint = () => {
