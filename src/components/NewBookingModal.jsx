@@ -11,16 +11,28 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     'Executive Pack': 'EXECUTIVE PACK',
   };
 
+  const normalize = (name) => {
+    if (!name) return '';
+    return name
+      .toUpperCase()
+      .replace(/ROOMS|ROOM|SUITES|SUITE/g, '')
+      .replace(/[^A-Z0-9]/g, '');
+  };
+
   const findCategoryForRoom = (num) => {
     for (const cat of roomCategories) {
-      const entry = Object.entries(CATEGORY_MAP).find(([, v]) => v === cat.name);
-      if (entry && cat.rooms.some(r => r.number === num)) return entry[0];
+      if (cat.rooms.some(r => r.number === num)) {
+        const matchedKey = Object.keys(CATEGORY_MAP).find(
+          key => normalize(key) === normalize(cat.name)
+        );
+        if (matchedKey) return matchedKey;
+      }
     }
     return 'Super Deluxe';
   };
 
   const getRate = useCallback((category, plan) => {
-    const pr = pricingRates.find(r => r.category.toLowerCase() === category.toLowerCase());
+    const pr = pricingRates.find(r => normalize(r.category) === normalize(category));
     if (!pr) return 4000;
     const key = plan.toLowerCase();
     return pr[key] || pr.baseRate || pr.ep || 4000;
@@ -49,8 +61,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
 
   const [payment, setPayment] = useState({ mode: 'Cash', amount: '' });
 
-  const catName = CATEGORY_MAP[form.category] || 'SUPER DELUXE ROOMS';
-  const cat = roomCategories.find(c => c.name === catName);
+  const cat = roomCategories.find(c => normalize(c.name) === normalize(form.category));
   const availableRooms = cat ? cat.rooms.filter(r => r.status === 'available') : [];
   const nights = Math.max(1, Math.round((new Date(form.checkOut) - new Date(form.checkIn)) / (1000 * 60 * 60 * 24)));
   const extraAdults = Math.max(0, form.adults - 2);
