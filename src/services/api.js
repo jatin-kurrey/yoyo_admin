@@ -1,6 +1,7 @@
-const VITE_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const RAW = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const VITE_API_URL = RAW.replace(/\/+$/, '');
 const PMS_BASE = import.meta.env.VITE_PMS_API_URL || `${VITE_API_URL}/pms`;
-const ADMIN_BASE = VITE_API_URL.endsWith('/admin') ? VITE_API_URL : `${VITE_API_URL}/admin`;
+const ADMIN_BASE = VITE_API_URL.includes('/admin') ? VITE_API_URL : `${VITE_API_URL}/admin`;
 const PUBLIC_BASE = VITE_API_URL;
 
 function getToken() {

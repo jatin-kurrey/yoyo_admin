@@ -501,6 +501,8 @@ export function AppProvider({ children }) {
     }
   }, [state, showToast, setUser]);
 
+  const [usingMockData, setUsingMockData] = useState(false);
+
   // Map roomId → room UUID from API
   const buildRoomMap = useCallback((rooms) => {
     const map = {};
@@ -529,8 +531,8 @@ export function AppProvider({ children }) {
     }
     setAuthChecked(true);
 
-    // If we don't have a token, do not call PMS endpoints to avoid 401 loops
     if (!api.getToken()) {
+      setUsingMockData(true);
       setLoading(false);
       return;
     }
@@ -564,131 +566,142 @@ export function AppProvider({ children }) {
 
       buildRoomMap(apiRooms);
 
-      if (apiCats.length > 0 && apiRooms.length > 0) {
-        const categories = apiCats.map(c => ({
-          name: c.name.toUpperCase(),
-          rooms: apiRooms.filter(r => r.category_id === c.id).map(r => ({
+      const gotRealData = apiRooms.length > 0 || apiCats.length > 0 || apiBookings.length > 0;
+      setUsingMockData(!gotRealData);
+
+      const categories = apiCats.length > 0
+        ? apiCats.map(c => ({
+            name: c.name.toUpperCase(),
+            rooms: apiRooms.filter(r => r.category_id === c.id).map(r => ({
+              number: r.room_number,
+              clean: r.clean_status === 'clean',
+              status: r.status,
+            })),
+          }))
+        : fallbackCats;
+
+      const statuses = apiRooms.length > 0
+        ? apiRooms.map(r => ({
             number: r.room_number,
-            clean: r.clean_status === 'clean',
             status: r.status,
-          })),
-        }));
-        const statuses = apiRooms.map(r => ({
-          number: r.room_number,
-          status: r.status,
-          cleanStatus: r.clean_status,
-          floor: r.floor,
-          oooReason: r.ooo_reason || undefined,
-        }));
-        const pricingRates = apiCats.map(c => ({
-          id: c.id,
-          category: c.name,
-          baseRate: c.base_price,
-          ep: c.base_price,
-          cp: c.base_price + (c.base_price > 5000 ? 800 : 500),
-          ap: c.base_price + (c.base_price > 5000 ? 2500 : 2000),
-        }));
+            cleanStatus: r.clean_status,
+            floor: r.floor,
+            oooReason: r.ooo_reason || undefined,
+          }))
+        : fallbackRoomStatuses;
 
-        const posTables = apiTables.map(t => ({
-          id: t.id,
-          number: t.table_number,
-          area: t.area,
-          capacity: t.capacity,
-          status: t.status,
-          kotCount: t.kot_count || 0,
-          guestName: t.guest_name || '',
-          orderValue: t.current_order_value || 0,
-        }));
+      const pricingRates = apiCats.length > 0
+        ? apiCats.map(c => ({
+            id: c.id,
+            category: c.name,
+            baseRate: c.base_price,
+            ep: c.base_price,
+            cp: c.base_price + (c.base_price > 5000 ? 800 : 500),
+            ap: c.base_price + (c.base_price > 5000 ? 2500 : 2000),
+          }))
+        : fallbackPricing;
 
-        const bookings = apiBookings.map(b => ({
-          id: b.booking_ref,
-          bookingRef: b.id,
-          roomNumber: b.room?.room_number,
-          guestName: b.guest_name,
-          pax: `${b.adults}+${b.children}`,
-          plan: b.plan,
-          source: b.source,
-          checkIn: b.check_in?.slice(0, 10),
-          checkOut: b.check_out?.slice(0, 10),
-          balance: b.balance_amount,
-          status: b.status,
-        }));
+      const posTables = apiTables.length > 0
+        ? apiTables.map(t => ({
+            id: t.id,
+            number: t.table_number,
+            area: t.area,
+            capacity: t.capacity,
+            status: t.status,
+            kotCount: t.kot_count || 0,
+            guestName: t.guest_name || '',
+            orderValue: t.current_order_value || 0,
+          }))
+        : fallbackPosTables;
 
-        const menuItems = apiMenu.map((item, i) => ({
-          id: item.id || i + 1,
-          name: item.title,
-          category: item.category,
-          price: Math.round(item.price / 100),
-          veg: !item.category?.toLowerCase().includes('chicken') && !item.category?.toLowerCase().includes('non-veg'),
-        }));
+      const bookings = apiBookings.length > 0
+        ? apiBookings.map(b => ({
+            id: b.booking_ref,
+            bookingRef: b.id,
+            roomNumber: b.room?.room_number,
+            guestName: b.guest_name,
+            pax: `${b.adults}+${b.children}`,
+            plan: b.plan,
+            source: b.source,
+            checkIn: b.check_in?.slice(0, 10),
+            checkOut: b.check_out?.slice(0, 10),
+            balance: b.balance_amount,
+            status: b.status,
+          }))
+        : fallbackBookings;
 
-        const apiTxns = txnsRes.status === 'fulfilled' ? txnsRes.value?.data || [] : [];
-        const transactions = apiTxns.length > 0 ? apiTxns.map(t => ({
-          id: t.id?.slice(0, 8) || `TXN${Date.now()}`,
-          date: t.date || new Date().toISOString().slice(0, 10),
-          type: t.type,
-          category: t.category,
-          description: t.description || '',
-          amount: t.amount,
-          method: t.method,
-          status: t.status,
-          guestName: t.guest_name || '',
-        })) : fallbackTxns;
+      const menuItems = apiMenu.length > 0
+        ? apiMenu.map((item, i) => ({
+            id: item.id || i + 1,
+            name: item.title,
+            category: item.category,
+            price: Math.round(item.price / 100),
+            veg: !item.category?.toLowerCase().includes('chicken') && !item.category?.toLowerCase().includes('non-veg'),
+          }))
+        : fallbackMenuItems;
 
-        const apiSettings = settingsRes.status === 'fulfilled' ? settingsRes.value?.data || {} : {};
-        const apiUsers = usersRes.status === 'fulfilled' ? usersRes.value?.data?.items || [] : [];
-        const apiOverrides = overridesRes.status === 'fulfilled' ? overridesRes.value?.data || [] : [];
+      const apiTxns = txnsRes.status === 'fulfilled' ? txnsRes.value?.data || [] : [];
+      const transactions = apiTxns.length > 0 ? apiTxns.map(t => ({
+        id: t.id?.slice(0, 8) || `TXN${Date.now()}`,
+        date: t.date || new Date().toISOString().slice(0, 10),
+        type: t.type,
+        category: t.category,
+        description: t.description || '',
+        amount: t.amount,
+        method: t.method,
+        status: t.status,
+        guestName: t.guest_name || '',
+      })) : fallbackTxns;
 
-        const hkStaffList = apiUsers.filter(u => u.role === 'hk_staff').map(u => ({
-          id: u.id,
-          name: u.name,
-          status: 'available',
-          assignedRooms: [],
-        }));
-        const housekeepingStaff = hkStaffList.length > 0 ? hkStaffList : fallbackHKStaff;
+      const apiSettings = settingsRes.status === 'fulfilled' ? settingsRes.value?.data || {} : {};
+      const apiUsers = usersRes.status === 'fulfilled' ? usersRes.value?.data?.items || [] : [];
+      const apiOverrides = overridesRes.status === 'fulfilled' ? overridesRes.value?.data || [] : [];
 
-        const defaultRules = {
-          checkInTime: apiSettings.check_in_time || '12:00 PM',
-          checkOutTime: apiSettings.check_out_time || '10:00 AM',
-          holdExpiry: apiSettings.hold_expiry || '4 Hours',
-          currency: apiSettings.currency || 'INR',
-          taxRate: parseInt(apiSettings.tax_rate) || 12,
-          nightAuditTime: apiSettings.night_audit_time || '01:00 AM',
-        };
+      const hkStaffList = apiUsers.filter(u => u.role === 'hk_staff').map(u => ({
+        id: u.id,
+        name: u.name,
+        status: 'available',
+        assignedRooms: [],
+      }));
+      const housekeepingStaff = hkStaffList.length > 0 ? hkStaffList : fallbackHKStaff;
 
-        const overridesByDate = {};
-        apiOverrides.forEach(o => {
-          const catName = pricingRates.find(r => r.id === o.category_id)?.category;
-          if (!catName) return;
-          if (!overridesByDate[catName]) overridesByDate[catName] = {};
-          if (!overridesByDate[catName][o.date]) overridesByDate[catName][o.date] = {};
-          overridesByDate[catName][o.date][o.plan] = o.rate;
-        });
-        const dateRateOverrides = Object.keys(overridesByDate).length > 0 ? overridesByDate : {};
+      const defaultRules = {
+        checkInTime: apiSettings.check_in_time || '12:00 PM',
+        checkOutTime: apiSettings.check_out_time || '10:00 AM',
+        holdExpiry: apiSettings.hold_expiry || '4 Hours',
+        currency: apiSettings.currency || 'INR',
+        taxRate: parseInt(apiSettings.tax_rate) || 12,
+        nightAuditTime: apiSettings.night_audit_time || '01:00 AM',
+      };
 
-        rawDispatch({
-          type: 'SET_INITIAL_DATA',
-          payload: {
-            roomCategories: categories,
-            roomStatuses: statuses,
-            pricingRates: pricingRates.length > 0 ? pricingRates : fallbackPricing,
-            bookings: bookings.length > 0 ? bookings : fallbackBookings,
-            posTables: posTables.length > 0 ? posTables : fallbackPosTables,
-            menuItems: menuItems.length > 0 ? menuItems : fallbackMenuItems,
-            transactions,
-            housekeepingStaff,
-            defaultRules,
-            dateRateOverrides,
-          },
-        });
-      }
-    } catch {}
+      const overridesByDate = {};
+      apiOverrides.forEach(o => {
+        const catName = pricingRates.find(r => r.id === o.category_id)?.category;
+        if (!catName) return;
+        if (!overridesByDate[catName]) overridesByDate[catName] = {};
+        if (!overridesByDate[catName][o.date]) overridesByDate[catName][o.date] = {};
+        overridesByDate[catName][o.date][o.plan] = o.rate;
+      });
+      const dateRateOverrides = Object.keys(overridesByDate).length > 0 ? overridesByDate : {};
+
+      rawDispatch({
+        type: 'SET_INITIAL_DATA',
+        payload: { roomCategories: categories, roomStatuses: statuses, pricingRates, bookings, posTables, menuItems, transactions, housekeepingStaff, defaultRules, dateRateOverrides },
+      });
+    } catch { setUsingMockData(true); }
     setLoading(false);
   }, [user, buildRoomMap]);
 
   // Load all data from API on mount
   useEffect(() => {
     refreshData();
+  }, [refreshData]);
+
+  // Auto-poll every 30s for live updates
+  useEffect(() => {
+    if (!api.getToken()) return;
+    const interval = setInterval(() => refreshData(), 30000);
+    return () => clearInterval(interval);
   }, [refreshData]);
 
   // Computed values
@@ -786,7 +799,7 @@ export function AppProvider({ children }) {
   const vouchers = txVouchers.length > 0 ? txVouchers : state.vouchers;
 
   const value = {
-    state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast, refreshData,
+    state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast, refreshData, usingMockData,
     bookings: state.bookings, activeBookings, checkedInBookings,
     roomCategories: state.roomCategories, roomStatuses: state.roomStatuses,
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,

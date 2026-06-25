@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useApp } from '../store/AppContext';
-import { MoveRight } from 'lucide-react';
+import { MoveRight, X } from 'lucide-react';
 
 export default function RightPanel() {
-  const { todayStats, housekeepingStats, posTables, dispatch, occupancyRate, totalRooms, transactions } = useApp();
+  const { todayStats, housekeepingStats, posTables, dispatch, occupancyRate, totalRooms, transactions, bookings } = useApp();
+  const [moveModal, setMoveModal] = useState(null);
+  const [roomInput, setRoomInput] = useState('');
 
   const liveOrders = posTables.filter(t => t.status === 'occupied');
   const paidTxns = transactions.filter(t => t.type === 'income' && t.status === 'completed');
@@ -15,12 +18,11 @@ export default function RightPanel() {
   const upiPct = hasPayments ? Math.round((upiTotal / totalPaid) * 100) : 0;
   const cardPct = hasPayments ? 100 - cashPct - upiPct : 0;
 
+  const checkedInBookings = bookings.filter(b => b.status === 'checked-in');
+
   const handleMoveToRoom = (tableId, tableNumber) => {
-    const rooms = document.createElement('div');
-    const room = prompt(`Enter room number to move Table ${tableNumber} bill to:`);
-    if (room && +room) {
-      dispatch({ type: 'MOVE_TO_ROOM', payload: { tableId, roomNumber: +room } });
-    }
+    setMoveModal({ tableId, tableNumber });
+    setRoomInput('');
   };
 
   return (
@@ -151,6 +153,30 @@ export default function RightPanel() {
           <span className="font-mono text-[9px]">v2.0.1</span>
         </div>
       </div>
+
+      {moveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setMoveModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-96 p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-800">Move Bill to Room</h3>
+              <button onClick={() => setMoveModal(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+            </div>
+            <p className="text-[11px] text-slate-500 mb-3">Select in-house guest or type a room number:</p>
+            <div className="space-y-2 max-h-40 overflow-y-auto mb-3">
+              {checkedInBookings.map((b) => (
+                <div key={b.id} onClick={() => { dispatch({ type: 'MOVE_TO_ROOM', payload: { tableId: moveModal.tableId, roomNumber: b.roomNumber } }); setMoveModal(null); }}
+                  className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs">
+                  <span className="font-medium text-slate-700">Room {b.roomNumber} — {b.guestName}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+              <input type="number" value={roomInput} onChange={e => setRoomInput(e.target.value)} placeholder="Or type room number..." className="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+              <button onClick={() => { if (roomInput) { dispatch({ type: 'MOVE_TO_ROOM', payload: { tableId: moveModal.tableId, roomNumber: +roomInput } }); setMoveModal(null); } }} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">Move</button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

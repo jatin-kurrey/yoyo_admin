@@ -139,10 +139,25 @@ export default function SettingsPage() {
   const handleReset = async () => {
     setBusy(true);
     try {
+      // Force backup before reset
+      const backup = await pmsService.backupSystem();
+      if (!backup.success) {
+        showToast('Backup failed — aborting reset. Try again.', 'error');
+        setBusy(false);
+        return;
+      }
+      const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pre-reset-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
       const res = await pmsService.resetSystem();
       if (res.success) {
         dispatch({ type: 'RESET_DATA' });
-        showToast('System reset. All PMS data cleared.');
+        showToast('System reset. Backup downloaded automatically.');
         setShowResetConfirm(false);
       } else showToast(res.message || 'Reset failed', 'error');
     } catch (err) { showToast(err.message, 'error'); }

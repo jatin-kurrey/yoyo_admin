@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './store/AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import CalendarGrid from './components/CalendarGrid';
@@ -17,7 +18,7 @@ import LoginPage from './pages/LoginPage';
 import { sidebarModules } from './data/mockData';
 
 function AppInner() {
-  const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels } = useApp();
+  const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels, usingMockData } = useApp();
   const [activeModule, setActiveModule] = useState('calendar');
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookingPrefill, setBookingPrefill] = useState(null);
@@ -104,6 +105,11 @@ function AppInner() {
           prefillDate={bookingPrefill?.date}
         />
       )}
+      {usingMockData && (
+        <div className="fixed bottom-0 left-0 right-0 z-[9998] bg-amber-500 text-white text-[10px] font-semibold text-center py-1 tracking-wider">
+          ⚠ DEMO MODE — Showing sample data. Connect to backend for live operations.
+        </div>
+      )}
     </div>
   );
 }
@@ -111,7 +117,9 @@ function AppInner() {
 export default function App() {
   return (
     <AppProvider>
-      <AppInner />
+      <ErrorBoundary>
+        <AppInner />
+      </ErrorBoundary>
     </AppProvider>
   );
 }
