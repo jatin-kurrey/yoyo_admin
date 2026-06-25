@@ -32,6 +32,14 @@ const initialState = {
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
+    minAdvancePct: 0, minAdvanceAmt: 0,
+    receiptHotelName: 'YOYO Fun Resort & Water Park',
+    receiptAddress: 'Plot No. 12, Waterfront Road, Near Beach Colony',
+    receiptCity: 'Goa - 403001',
+    receiptPhone: '+91 98765 43210',
+    receiptEmail: 'accounts@yoyofun.in',
+    receiptGstin: '30ABCDE1234F1Z5',
+    receiptPan: 'ABCDE1234F',
   },
   emailScheduler: { enabled: false, email: 'manager@yoyofun.in', time: '06:00 AM' },
   folioCharges: [],
@@ -810,6 +818,15 @@ export function AppProvider({ children }) {
         currency: apiSettings.currency || 'INR',
         taxRate: parseInt(apiSettings.tax_rate) || 12,
         nightAuditTime: apiSettings.night_audit_time || '01:00 AM',
+        minAdvancePct: parseInt(apiSettings.minAdvancePct) || 0,
+        minAdvanceAmt: parseInt(apiSettings.minAdvanceAmt) || 0,
+        receiptHotelName: apiSettings.receiptHotelName || 'YOYO Fun Resort & Water Park',
+        receiptAddress: apiSettings.receiptAddress || 'Plot No. 12, Waterfront Road, Near Beach Colony',
+        receiptCity: apiSettings.receiptCity || 'Goa - 403001',
+        receiptPhone: apiSettings.receiptPhone || '+91 98765 43210',
+        receiptEmail: apiSettings.receiptEmail || 'accounts@yoyofun.in',
+        receiptGstin: apiSettings.receiptGstin || '30ABCDE1234F1Z5',
+        receiptPan: apiSettings.receiptPan || 'ABCDE1234F',
       };
 
       const overridesByDate = {};

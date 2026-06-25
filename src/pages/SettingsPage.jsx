@@ -321,6 +321,63 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {isSuperAdmin && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Receipt & Financial Rules Customization</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 mb-2.5">Financial Rules</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-600">Min Advance Payment (%)</span>
+                    <input type="number" value={localRules?.minAdvancePct || 0} onChange={e => setLocalRules({...localRules, minAdvancePct: +e.target.value})} className="w-24 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-600">Min Advance Fixed Amount (₹)</span>
+                    <input type="number" value={localRules?.minAdvanceAmt || 0} onChange={e => setLocalRules({...localRules, minAdvanceAmt: +e.target.value})} className="w-24 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-700">Receipt Details</h4>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">Hotel Name</span>
+                <input type="text" value={localRules?.receiptHotelName || ''} onChange={e => setLocalRules({...localRules, receiptHotelName: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">Address</span>
+                <input type="text" value={localRules?.receiptAddress || ''} onChange={e => setLocalRules({...localRules, receiptAddress: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">City/State</span>
+                <input type="text" value={localRules?.receiptCity || ''} onChange={e => setLocalRules({...localRules, receiptCity: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">Phone</span>
+                <input type="text" value={localRules?.receiptPhone || ''} onChange={e => setLocalRules({...localRules, receiptPhone: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">Email</span>
+                <input type="text" value={localRules?.receiptEmail || ''} onChange={e => setLocalRules({...localRules, receiptEmail: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">GSTIN</span>
+                <input type="text" value={localRules?.receiptGstin || ''} onChange={e => setLocalRules({...localRules, receiptGstin: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-600 shrink-0">PAN</span>
+                <input type="text" value={localRules?.receiptPan || ''} onChange={e => setLocalRules({...localRules, receiptPan: e.target.value})} className="flex-1 max-w-[240px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end mt-4 pt-4 border-t border-slate-100">
+            <button onClick={() => { dispatch({ type: 'UPDATE_DEFAULT_RULES', payload: localRules }); showToast('Settings saved'); }} className="px-5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">Save Settings</button>
+          </div>
+        </div>
+      )}
+
       {/* Local Demo Users */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">

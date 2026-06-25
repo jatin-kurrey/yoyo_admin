@@ -2,20 +2,21 @@ import { useRef } from 'react';
 import { X, Printer, Download } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
-const HOTEL_INFO = {
-  name: 'YOYO Fun Resort & Water Park',
-  address: 'Plot No. 12, Waterfront Road, Near Beach Colony',
-  city: 'Goa - 403001',
-  gst: '30ABCDE1234F1Z5',
-  pan: 'ABCDE1234F',
-  phone: '+91 98765 43210',
-  email: 'accounts@yoyofun.in',
-};
-
 export default function InvoiceModal({ data, type, onClose }) {
   const printRef = useRef(null);
   const { defaultRules } = useApp();
   const today = new Date();
+
+  const hotelInfo = {
+    name: defaultRules?.receiptHotelName || 'YOYO Fun Resort & Water Park',
+    address: defaultRules?.receiptAddress || 'Plot No. 12, Waterfront Road, Near Beach Colony',
+    city: defaultRules?.receiptCity || 'Goa - 403001',
+    phone: defaultRules?.receiptPhone || '+91 98765 43210',
+    email: defaultRules?.receiptEmail || 'accounts@yoyofun.in',
+    gstin: defaultRules?.receiptGstin || '30ABCDE1234F1Z5',
+    pan: defaultRules?.receiptPan || 'ABCDE1234F',
+  };
+
   const invoiceNo = type === 'pos'
     ? `POS-${data?.id?.slice(-6) || Date.now().toString().slice(-6)}`
     : `INV-${data?.id || Date.now().toString().slice(-6)}`;
@@ -79,8 +80,8 @@ export default function InvoiceModal({ data, type, onClose }) {
       <div class="invoice">
         <div class="header">
           <div>
-            <div class="hotel-name">${HOTEL_INFO.name}</div>
-            <div class="hotel-info">${HOTEL_INFO.address}<br>${HOTEL_INFO.city}</div>
+            <div class="hotel-name">${hotelInfo.name}</div>
+            <div class="hotel-info">${hotelInfo.address}<br>${hotelInfo.city}</div>
           </div>
           <div>
             <div class="invoice-title">TAX INVOICE</div>
@@ -166,17 +167,17 @@ export default function InvoiceModal({ data, type, onClose }) {
         <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #64748b;">
           <table style="width: 100%;">
             <tr>
-              <td><strong>GST:</strong> ${HOTEL_INFO.gst}</td>
-              <td><strong>PAN:</strong> ${HOTEL_INFO.pan}</td>
-              <td><strong>Phone:</strong> ${HOTEL_INFO.phone}</td>
-              <td><strong>Email:</strong> ${HOTEL_INFO.email}</td>
+              <td><strong>GST:</strong> ${hotelInfo.gstin}</td>
+              <td><strong>PAN:</strong> ${hotelInfo.pan}</td>
+              <td><strong>Phone:</strong> ${hotelInfo.phone}</td>
+              <td><strong>Email:</strong> ${hotelInfo.email}</td>
             </tr>
           </table>
         </div>
 
         <div class="footer">
           This is a computer-generated invoice. No signature required.<br>
-          Thank you for choosing ${HOTEL_INFO.name}!
+          Thank you for choosing ${hotelInfo.name}!
         </div>
 
         <button class="print-btn" onclick="window.print()">🖨 Print Invoice</button>
@@ -232,10 +233,10 @@ export default function InvoiceModal({ data, type, onClose }) {
         <div ref={printRef} className="flex-1 overflow-y-auto p-8 bg-white" style={{ fontFamily: "'Courier New', monospace" }}>
           <div className="border-b-2 border-slate-800 pb-5 mb-5 flex justify-between items-start">
             <div>
-              <div className="text-xl font-bold uppercase tracking-wider text-slate-800">{HOTEL_INFO.name}</div>
+              <div className="text-xl font-bold uppercase tracking-wider text-slate-800">{hotelInfo.name}</div>
               <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                {HOTEL_INFO.address}<br />
-                {HOTEL_INFO.city}
+                {hotelInfo.address}<br />
+                {hotelInfo.city}
               </div>
             </div>
             <div className="text-right">
@@ -369,16 +370,16 @@ export default function InvoiceModal({ data, type, onClose }) {
 
           <div className="border-t border-slate-200 pt-3 text-[10px] text-slate-500">
             <div className="grid grid-cols-4 gap-4">
-              <div><strong>GST:</strong> {HOTEL_INFO.gst}</div>
-              <div><strong>PAN:</strong> {HOTEL_INFO.pan}</div>
-              <div><strong>Phone:</strong> {HOTEL_INFO.phone}</div>
-              <div><strong>Email:</strong> {HOTEL_INFO.email}</div>
+              <div><strong>GST:</strong> {hotelInfo.gstin}</div>
+              <div><strong>PAN:</strong> {hotelInfo.pan}</div>
+              <div><strong>Phone:</strong> {hotelInfo.phone}</div>
+              <div><strong>Email:</strong> {hotelInfo.email}</div>
             </div>
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-200 text-[9px] text-slate-400 text-center">
             This is a computer-generated invoice. No signature required.<br />
-            Thank you for choosing {HOTEL_INFO.name}!
+            Thank you for choosing {hotelInfo.name}!
           </div>
         </div>
       </div>

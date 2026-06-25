@@ -3,7 +3,7 @@ import { X, User, Phone, Calendar } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
 export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
-  const { dispatch, roomCategories, pricingRates, dates } = useApp();
+  const { dispatch, roomCategories, pricingRates, dates, defaultRules } = useApp();
 
   const normalize = (name) => {
     if (!name) return '';
@@ -54,16 +54,30 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
   const availableRooms = cat ? cat.rooms.filter(r => r.status === 'available') : [];
   const nights = Math.max(1, Math.round((new Date(form.checkOut) - new Date(form.checkIn)) / (1000 * 60 * 60 * 24)));
   const extraAdults = Math.max(0, form.adults - 2);
-  const tax = Math.round(form.rate * nights * 0.12);
+  const taxRate = defaultRules?.taxRate || 12;
+  const tax = Math.round(form.rate * nights * taxRate / 100);
   const total = form.rate * nights + extraAdults * 500 + tax;
+
+  const minPct = defaultRules?.minAdvancePct || 0;
+  const minAmt = defaultRules?.minAdvanceAmt || 0;
+  const minRequiredAmount = Math.max(minAmt, Math.round(total * minPct / 100));
 
   const handleSubmit = () => {
     if (!form.guestName.trim()) return alert('Enter guest name');
     if (availableRooms.length === 0) return alert('No rooms available in this category');
 
-    const roomNumber = prefillRoom || availableRooms[0].number;
     const today = new Date().toISOString().slice(0, 10);
     const isFuture = form.checkIn > today;
+
+    // Enforce minimum advance payment for check-in
+    if (!isFuture && minRequiredAmount > 0) {
+      const paid = Number(payment.amount) || 0;
+      if (paid < minRequiredAmount) {
+        return alert(`Minimum advance payment of ₹${minRequiredAmount} is required to check-in.`);
+      }
+    }
+
+    const roomNumber = prefillRoom || availableRooms[0].number;
 
     dispatch({
       type: 'ADD_BOOKING',
@@ -168,7 +182,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
             <div className="flex justify-between text-xs"><span className="text-slate-500">Rate / Night</span><span className="font-semibold text-slate-800">₹{form.rate}</span></div>
             <div className="flex justify-between text-xs"><span className="text-slate-500">Nights</span><span className="font-semibold">{nights}</span></div>
             {extraAdults > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Extra Adult (₹500 × {extraAdults})</span><span className="font-semibold">₹{extraAdults * 500}</span></div>}
-            <div className="flex justify-between text-xs"><span className="text-slate-500">Tax (12%)</span><span className="font-semibold">₹{tax}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-slate-500">Tax ({taxRate}%)</span><span className="font-semibold">₹{tax}</span></div>
             <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-800">
               <span>Total</span>
               <span className="text-emerald-600">₹{total.toLocaleString()}</span>
@@ -176,7 +190,14 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
           </div>
 
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Advance Payment</label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Advance Payment</label>
+              {minRequiredAmount > 0 && (
+                <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  Min Required: ₹{minRequiredAmount.toLocaleString()}
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2 mb-2">
               {['Cash', 'UPI', 'Card'].map(mode => (
                 <div key={mode} onClick={() => setPayment({...payment, mode})}
