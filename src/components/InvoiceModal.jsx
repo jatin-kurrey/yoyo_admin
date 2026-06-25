@@ -28,10 +28,10 @@ export default function InvoiceModal({ data, type, onClose }) {
     stayNights = Math.max(1, Math.round((new Date(data.checkOut) - new Date(data.checkIn)) / (1000 * 60 * 60 * 24)));
   }
   const calculatedRoomCharges = (data?.rate || 4000) * stayNights;
-  const subtotal = data?.total || data?.amount || calculatedRoomCharges;
+  const subtotal = data?.total ? (data.total - (data.tax || 0)) : (data?.amount || calculatedRoomCharges);
 
-  const taxAmt = Math.round(subtotal * taxRate / 100);
-  const grandTotal = subtotal + taxAmt;
+  const taxAmt = data?.tax || Math.round(subtotal * taxRate / 100);
+  const grandTotal = data?.total || (subtotal + taxAmt);
   
   const totalPaid = data?.paid || 0;
   const advancePaid = data?.status === 'checked-in' ? totalPaid : (data?.advancePaid || (totalPaid - (data?.checkoutPaid || 0)));
