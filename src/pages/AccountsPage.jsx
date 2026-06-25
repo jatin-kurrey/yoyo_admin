@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Download, FileText, Plus } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import InvoiceModal from '../components/InvoiceModal';
 
 export default function AccountsPage() {
-  const { transactions, vouchers, dispatch, showToast } = useApp();
+  const { transactions, vouchers, dispatch, showToast, bookings } = useApp();
   const [activeTab, setActiveTab] = useState('transactions');
   const [txFilter, setTxFilter] = useState('all');
   const [showAddTx, setShowAddTx] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
   const [newTx, setNewTx] = useState({ type: 'income', category: 'Room Booking', description: '', amount: '', method: 'Cash', date: new Date().toISOString().slice(0, 10) });
 
   const filteredTx = transactions.filter(t => {
@@ -139,9 +141,14 @@ export default function AccountsPage() {
                 <div className="text-sm font-bold text-slate-800">₹{v.amount.toLocaleString()}</div>
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                <button onClick={() => showToast(`Viewing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">View</button>
-                <button onClick={() => showToast(`Printing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Print</button>
-                <button onClick={() => showToast(`Emailing ${v.id}`)} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Email</button>
+                <button onClick={() => {
+                  const booking = bookings.find(b => b.guestName === v.guest);
+                  setInvoiceData({ id: v.id, guestName: v.guest, amount: v.amount, total: v.amount, date: v.date, description: v.type, items: [{ name: v.type, price: v.amount, qty: 1 }], roomNumber: booking?.roomNumber, paid: v.status === 'generated' ? v.amount : 0 });
+                }} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">View</button>
+                <button onClick={() => {
+                  const booking = bookings.find(b => b.guestName === v.guest);
+                  setInvoiceData({ id: v.id, guestName: v.guest, amount: v.amount, total: v.amount, date: v.date, description: v.type, items: [{ name: v.type, price: v.amount, qty: 1 }], roomNumber: booking?.roomNumber, paid: v.status === 'generated' ? v.amount : 0 });
+                }} className="text-[10px] text-blue-600 font-semibold hover:bg-blue-50 px-2 py-1 rounded">Print</button>
               </div>
             </div>
           ))}
@@ -194,6 +201,10 @@ export default function AccountsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {invoiceData && (
+        <InvoiceModal data={invoiceData} type="voucher" onClose={() => setInvoiceData(null)} />
       )}
     </div>
   );

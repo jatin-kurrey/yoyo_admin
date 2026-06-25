@@ -551,6 +551,12 @@ export default function SettingsPage() {
 
       {/* Rooms & Categories Management — Super Admin Only */}
       {isSuperAdmin && (
+        <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-[10px] text-amber-700">
+          <strong>Note:</strong> Room changes are saved to localStorage. Refresh will restore from saved data. To reset to defaults, use the System Reset option above.
+        </div>
+      )}
+
+      {isSuperAdmin && (
         <div className="bg-white rounded-xl border-2 border-blue-200 overflow-hidden">
           <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
             <h3 className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-2">

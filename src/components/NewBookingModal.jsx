@@ -62,6 +62,8 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     if (availableRooms.length === 0) return alert('No rooms available in this category');
 
     const roomNumber = prefillRoom || availableRooms[0].number;
+    const today = new Date().toISOString().slice(0, 10);
+    const isFuture = form.checkIn > today;
 
     dispatch({
       type: 'ADD_BOOKING',
@@ -78,7 +80,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         balance: total - (payment.amount || 0),
-        status: 'checked-in',
+        status: isFuture ? 'future' : 'checked-in',
       },
     });
 

@@ -3,11 +3,12 @@ import { Printer, Download, Mail, TrendingUp, Play, CheckCircle2 } from 'lucide-
 import { useApp } from '../store/AppContext';
 
 export default function ReportsPage() {
-  const { dailyRevenue, bookings, roomCategories, transactions, dispatch, defaultRules, showToast } = useApp();
+  const { dailyRevenue, bookings, roomCategories, transactions, dispatch, defaultRules, showToast, auditLog, emailScheduler } = useApp();
   const [activeReport, setActiveReport] = useState('nightaudit');
-  const [scheduled, setScheduled] = useState(false);
-  const [email, setEmail] = useState('manager@yoyofun.in');
-  const [auditDone, setAuditDone] = useState(false);
+  const [scheduled, setScheduled] = useState(emailScheduler?.enabled || false);
+  const [email, setEmail] = useState(emailScheduler?.email || 'manager@yoyofun.in');
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const auditDone = auditLog.some(a => a.date === todayISO);
   const today = new Date();
   const dateRange = `${today.getDate()} ${today.toLocaleString('en-IN', { month: 'short' })} ${today.getFullYear()}`;
   const weekRange = `${dateRange} – ${new Date(today.getTime() + 6 * 86400000).getDate()} ${new Date(today.getTime() + 6 * 86400000).toLocaleString('en-IN', { month: 'short' })} ${today.getFullYear()}`;
@@ -42,21 +43,24 @@ export default function ReportsPage() {
   };
 
   const handleNightAudit = () => {
+    if (auditDone) return showToast('Night audit already completed for today', 'error');
     if (window.confirm(`Run Night Audit for ${dateRange}? This will finalize today's business and roll over to the next day.`)) {
-      setAuditDone(true);
       const todayISO = new Date().toISOString().slice(0, 10);
       dispatch({ type: 'ADD_TRANSACTION', payload: {
         date: todayISO, type: 'income', category: 'Night Audit',
         description: 'Night Audit - Daily closing', amount: netRev,
         method: 'System', status: 'completed',
       }});
-      setTimeout(() => setAuditDone(false), 3000);
+      dispatch({ type: 'ADD_NIGHT_AUDIT', payload: { date: todayISO, revenue: netRev } });
+      showToast(`Night audit completed for ${dateRange}`);
     }
   };
 
   const handleScheduleEmail = () => {
-    dispatch({ type: 'UPDATE_EMAIL_SCHEDULER', payload: { enabled: !scheduled, email } });
-    setScheduled(!scheduled);
+    const next = !scheduled;
+    dispatch({ type: 'UPDATE_EMAIL_SCHEDULER', payload: { enabled: next, email } });
+    setScheduled(next);
+    showToast(next ? 'Email scheduler enabled' : 'Email scheduler disabled');
   };
 
   return (

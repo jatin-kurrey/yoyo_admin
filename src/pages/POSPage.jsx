@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, Plus, X, Minus, ChefHat, MoveRight, Printer } from 'lucide-react';
+import { Search, Plus, X, Minus, ChefHat, MoveRight, Printer, FileText } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { posAreas, menuCategories } from '../data/mockData';
+import InvoiceModal from '../components/InvoiceModal';
 
 const tableStatusStyles = {
   vacant: { bg: 'bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500', label: 'Vacant' },
@@ -10,7 +11,7 @@ const tableStatusStyles = {
 };
 
 export default function POSPage() {
-  const { posTables, menuItems, checkedInBookings, dispatch } = useApp();
+  const { posTables, menuItems, checkedInBookings, dispatch, defaultRules, showToast } = useApp();
   const [activeArea, setActiveArea] = useState('Indoor Dining');
   const [selectedTable, setSelectedTable] = useState(null);
   const [showOrderDrawer, setShowOrderDrawer] = useState(false);
@@ -20,6 +21,7 @@ export default function POSPage() {
   const [guestName, setGuestName] = useState('');
   const [menuSearch, setMenuSearch] = useState('');
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [invoiceData, setInvoiceData] = useState(null);
 
   const filteredTables = posTables.filter(t => t.area === activeArea);
   const filteredMenu = (menuFilter === 'All' ? menuItems : menuItems.filter(m => m.category === menuFilter))
@@ -64,11 +66,13 @@ export default function POSPage() {
   const handleSendKOT = () => {
     if (cart.length === 0) return alert('Add items to order first');
     const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
-    dispatch({ type: 'UPDATE_TABLE_ORDER', payload: { tableId: selectedTable.id, kotDelta: 1, valueDelta: total, items: cart } });
+    dispatch({ type: 'UPDATE_TABLE_ORDER', payload: { tableId: selectedTable.id, kotDelta: 1, valueDelta: total, items: cart, currentCart: cart } });
     setCart([]);
+    showToast('KOT sent to kitchen');
   };
 
   const handleGenerateBill = () => {
+    dispatch({ type: 'UPDATE_TABLE_CART', payload: { tableId: selectedTable.id, cart } });
     dispatch({ type: 'BILL_TABLE', payload: selectedTable.id });
     setCart([]);
     setShowOrderDrawer(false);
@@ -125,7 +129,16 @@ export default function POSPage() {
                     </div>
                   )}
                   {table.status === 'billed' && (
-                    <div className="mt-2"><div className="text-[10px] text-amber-600 font-semibold">Bill: ₹{table.orderValue} · Tap to clear</div></div>
+                    <div className="mt-2">
+                      <div className="text-[10px] text-amber-600 font-semibold flex items-center justify-between">
+                        <span>Bill: ₹{table.orderValue}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setInvoiceData({ id: `BILL${table.id}`, tableNumber: table.number, area: table.area, guestName: table.guestName, total: table.orderValue, date: new Date().toISOString().slice(0, 10), items: table.currentCart || [] }); }}
+                          className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-semibold">
+                          <FileText size={11} /> Invoice
+                        </button>
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">Tap card to clear</div>
+                    </div>
                   )}
                 </div>
               );
@@ -211,10 +224,10 @@ export default function POSPage() {
             </div>
 
             <div className="px-4 py-2 border-t border-slate-200">
-              {(() => { const sub = cart.reduce((s, c) => s + c.price * c.qty, 0); return (
+              {(() => { const sub = cart.reduce((s, c) => s + c.price * c.qty, 0); const taxRate = defaultRules?.taxRate || 12; return (
                 <><div className="flex justify-between items-center mb-1"><span className="text-xs text-slate-500">Subtotal</span><span className="text-xs font-semibold">₹{sub}</span></div>
-                <div className="flex justify-between items-center mb-2"><span className="text-xs text-slate-500">GST (5%)</span><span className="text-xs font-semibold">₹{Math.round(sub * 0.05)}</span></div>
-                <div className="flex justify-between items-center pt-2 border-t border-slate-200"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-sm font-bold text-slate-800">₹{sub + Math.round(sub * 0.05)}</span></div></>
+                <div className="flex justify-between items-center mb-2"><span className="text-xs text-slate-500">GST ({taxRate}%)</span><span className="text-xs font-semibold">₹{Math.round(sub * taxRate / 100)}</span></div>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-sm font-bold text-slate-800">₹{sub + Math.round(sub * taxRate / 100)}</span></div></>
               )})()}
             </div>
 
@@ -254,6 +267,9 @@ export default function POSPage() {
             </div>
           </div>
         </div>
+      )}
+      {invoiceData && (
+        <InvoiceModal data={invoiceData} type="pos" onClose={() => setInvoiceData(null)} />
       )}
     </div>
   );

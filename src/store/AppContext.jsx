@@ -34,6 +34,9 @@ const initialState = {
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
   },
   emailScheduler: { enabled: false, email: 'manager@yoyofun.in', time: '06:00 AM' },
+  folioCharges: [],
+  bills: [],
+  auditLog: [],
   enabledModules: {
     dashboard: true, calendar: true, roomview: true,
     pos: true, hk: true, pricing: true,
@@ -54,6 +57,13 @@ function reducer(state, action) {
       return {
         ...state,
         bookings: state.bookings.map(b => (b.id === bookingId || b.bookingRef === bookingId) ? { ...b, balance: Math.max(0, b.balance - amount) } : b)
+      };
+    }
+    case 'ADD_FOLIO_CHARGE': {
+      const { bookingRef, charge } = action.payload;
+      return {
+        ...state,
+        folioCharges: [...state.folioCharges, { id: `FCH${Date.now()}`, bookingRef, ...charge }],
       };
     }
     case 'DELETE_BOOKING':
@@ -105,15 +115,47 @@ function reducer(state, action) {
       return { ...state, housekeepingStaff: state.housekeepingStaff.map(s => s.id === action.payload.staffId ? { ...s, assignedRooms: action.payload.rooms, status: 'busy' } : s) };
     case 'OCCUPY_TABLE':
       return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, status: 'occupied', kotCount: 0, guestName: action.payload.guestName || 'Guest', orderValue: 0 } : t) };
+    case 'UPDATE_TABLE_CART':
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, currentCart: action.payload.cart } : t) };
     case 'UPDATE_TABLE_ORDER':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + action.payload.kotDelta, orderValue: (t.orderValue || 0) + action.payload.valueDelta, status: 'occupied' } : t) };
-    case 'BILL_TABLE':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'billed', kotCount: 0 } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + action.payload.kotDelta, orderValue: (t.orderValue || 0) + action.payload.valueDelta, status: 'occupied', currentCart: action.payload.currentCart || t.currentCart } : t) };
+    case 'BILL_TABLE': {
+      const table = state.posTables.find(t => t.id === action.payload);
+      return {
+        ...state,
+        posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'billed', kotCount: 0 } : t),
+        bills: table ? [...state.bills, {
+          id: `BILL${Date.now()}`,
+          tableId: table.id,
+          tableNumber: table.number,
+          area: table.area,
+          guestName: table.guestName,
+          items: table.currentCart || [],
+          total: table.orderValue,
+          tax: Math.round(table.orderValue * 0.05),
+          grandTotal: table.orderValue + Math.round(table.orderValue * 0.05),
+          date: new Date().toISOString(),
+        }] : state.bills,
+      };
+    }
     case 'VACATE_TABLE':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0 } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [] } : t) };
     case 'MOVE_TO_ROOM': {
-      const { tableId } = action.payload;
-      return { ...state, posTables: state.posTables.map(t => t.id === tableId ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0 } : t) };
+      const { tableId, roomNumber } = action.payload;
+      const table = state.posTables.find(t => t.id === tableId);
+      const booking = state.bookings.find(b => b.roomNumber === roomNumber && b.status === 'checked-in');
+      const charge = table ? {
+        description: `POS Transfer - Table ${table.number} (${table.guestName})`,
+        amount: table.orderValue,
+        type: 'restaurant',
+        quantity: 1,
+      } : null;
+      return {
+        ...state,
+        posTables: state.posTables.map(t => t.id === tableId ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [] } : t),
+        folioCharges: charge && booking ? [...state.folioCharges, { id: `FCH${Date.now()}`, bookingRef: booking.bookingRef || booking.id, ...charge }] : state.folioCharges,
+        bookings: charge && booking ? state.bookings.map(b => (b.id === booking.id) ? { ...b, balance: (b.balance || 0) + table.orderValue } : b) : state.bookings,
+      };
     }
     case 'UPDATE_RATE':
       return { ...state, pricingRates: state.pricingRates.map(r => r.category === action.payload.category ? { ...r, ...action.payload.rates } : r) };
@@ -219,6 +261,10 @@ function reducer(state, action) {
         ),
         roomStatuses: state.roomStatuses.filter(r => r.number !== roomNumber),
       };
+    }
+    case 'ADD_NIGHT_AUDIT': {
+      const entry = { date: action.payload.date, completedAt: new Date().toISOString(), revenue: action.payload.revenue };
+      return { ...state, auditLog: [...state.auditLog, entry] };
     }
     // Module enable/disable
     case 'TOGGLE_MODULE':
@@ -774,6 +820,35 @@ export function AppProvider({ children }) {
     setLoading(false);
   }, [user, buildRoomMap]);
 
+  // Persist room categories + audit log to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('yoyo_room_categories', JSON.stringify(state.roomCategories));
+      localStorage.setItem('yoyo_audit_log', JSON.stringify(state.auditLog));
+      localStorage.setItem('yoyo_bills', JSON.stringify(state.bills));
+    } catch {}
+  }, [state.roomCategories, state.auditLog, state.bills]);
+
+  // Load persisted data from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCats = localStorage.getItem('yoyo_room_categories');
+      if (savedCats) {
+        const parsed = JSON.parse(savedCats);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          rawDispatch({ type: 'SET_INITIAL_DATA', payload: { roomCategories: parsed } });
+        }
+      }
+      const savedAudit = localStorage.getItem('yoyo_audit_log');
+      if (savedAudit) {
+        const parsed = JSON.parse(savedAudit);
+        if (Array.isArray(parsed)) {
+          rawDispatch({ type: 'SET_INITIAL_DATA', payload: { auditLog: parsed } });
+        }
+      }
+    } catch {}
+  }, []);
+
   // Load all data from API on mount
   useEffect(() => {
     refreshData();
@@ -888,6 +963,7 @@ export function AppProvider({ children }) {
     menuItems: state.menuItems, pricingRates: state.pricingRates, stopSell: state.stopSell, dateRateOverrides: state.dateRateOverrides,
     transactions: state.transactions, vouchers, roles: state.roles, demoUsers: state.demoUsers,
     defaultRules: state.defaultRules, emailScheduler: state.emailScheduler, enabledModules: state.enabledModules,
+    folioCharges: state.folioCharges, bills: state.bills, auditLog: state.auditLog,
     dates, dayLabels, todayStats, housekeepingStats, dashboardKPI, dailyRevenue, revenueBreakdown,
     posOrders, todayIncome, totalRooms, occupiedCount, vacantCount,
     occupancyRate, totalRevenue, totalExpenses, adr, revpar,

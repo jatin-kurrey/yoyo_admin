@@ -1,7 +1,8 @@
 import { useState, useMemo, Fragment } from 'react';
-import { Sparkles, MoreHorizontal, Search, Filter, X } from 'lucide-react';
+import { Sparkles, MoreHorizontal, Search, Filter, X, FileText, Printer, CheckCircle } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import EditFolioModal from './EditFolioModal';
+import InvoiceModal from './InvoiceModal';
 
 const statusColors = {
   'checked-in': { bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', text: 'text-emerald-700', label: 'Checked In' },
@@ -20,6 +21,9 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const [settlementAmount, setSettlementAmount] = useState('');
   const [settlementMode, setSettlementMode] = useState('Cash');
   const [selectedFolioBooking, setSelectedFolioBooking] = useState(null);
+  const [invoiceBooking, setInvoiceBooking] = useState(null);
+  const [checkinReceipt, setCheckinReceipt] = useState(null);
+  const [checkoutConfirm, setCheckoutConfirm] = useState(null);
 
   const filteredBookings = useMemo(() => {
     return (bookings || []).filter(b => {
@@ -38,7 +42,14 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
     if (!booking) return 0;
     const start = new Date(booking.checkIn);
     const end = new Date(booking.checkOut);
-    return Math.round((end - start) / (1000 * 60 * 60 * 24));
+    const span = Math.round((end - start) / (1000 * 60 * 60 * 24));
+    return Math.max(1, span);
+  };
+
+  const handleCheckinClick = (booking) => {
+    dispatch({ type: 'CHECK_IN', payload: booking.id });
+    setCheckinReceipt(booking);
+    setTooltip(null);
   };
 
   const handleCheckOut = (bookingId) => {
@@ -49,17 +60,21 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
       setSettlementAmount(booking.balance);
       setSettlementMode('Cash');
     } else {
-      if (window.confirm('Check out this guest?')) {
-        dispatch({ type: 'CHECK_OUT', payload: bookingId });
-      }
+      setCheckoutConfirm(booking);
     }
+  };
+
+  const handleCheckoutConfirm = () => {
+    if (!checkoutConfirm) return;
+    dispatch({ type: 'CHECK_OUT', payload: checkoutConfirm.id });
+    setInvoiceBooking({ ...checkoutConfirm, paid: 0 });
+    setCheckoutConfirm(null);
   };
 
   const handleSettlementSubmit = () => {
     if (!settlementBooking) return;
     const amount = Number(settlementAmount) || 0;
     
-    // 1. Record the payment to update the booking balance on the server/state
     if (amount > 0) {
       dispatch({
         type: 'ADD_PAYMENT',
@@ -71,7 +86,6 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
         }
       });
 
-      // 2. Add transaction record
       const todayStr = new Date().toISOString().slice(0, 10);
       dispatch({
         type: 'ADD_TRANSACTION',
@@ -88,10 +102,10 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
       });
     }
 
-    // 3. Trigger actual Checkout
     dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
 
-    // 4. Close modal
+    // Show invoice after settlement checkout
+    setInvoiceBooking({ ...settlementBooking, paid: amount });
     setSettlementBooking(null);
   };
 
@@ -217,11 +231,14 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
                                         <span onClick={(e) => { e.stopPropagation(); setSelectedFolioBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 cursor-pointer hover:bg-slate-200">Edit Folio</span>
                                       )}
                                       {(booking.status === 'future' || booking.status === 'hold') && (
-                                        <span onClick={(e) => { e.stopPropagation(); dispatch({ type: 'CHECK_IN', payload: booking.id }); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200">Check-in</span>
+                                        <span onClick={(e) => { e.stopPropagation(); handleCheckinClick(booking); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200">Check-in</span>
                                       )}
                                       {booking.status === 'checked-in' && (
                                         <span onClick={(e) => { e.stopPropagation(); handleCheckOut(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">Check-out</span>
                                       )}
+                                      <span onClick={(e) => { e.stopPropagation(); setInvoiceBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 flex items-center gap-1">
+                                        <FileText size={10} /> Invoice
+                                      </span>
                                       {booking.status !== 'checked-out' && (
                                         <span onClick={(e) => { e.stopPropagation(); handleDelete(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 cursor-pointer hover:bg-red-100">Cancel</span>
                                       )}
@@ -297,6 +314,122 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
         <EditFolioModal
           booking={selectedFolioBooking}
           onClose={() => setSelectedFolioBooking(null)}
+        />
+      )}
+
+      {/* Check-in Receipt */}
+      {checkinReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setCheckinReceipt(null)}>
+          <div className="bg-white rounded-xl shadow-2xl w-[480px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-emerald-500 px-6 py-5 text-white text-center">
+              <CheckCircle size={36} className="mx-auto mb-2" />
+              <h3 className="text-base font-bold">Check-In Successful</h3>
+              <p className="text-sm opacity-90 mt-0.5">Welcome to YOYO Fun Resort!</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Guest Name</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.guestName}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Room Number</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.roomNumber}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Check-In Date</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.checkIn}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Check-Out Date</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.checkOut}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Plan</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.plan}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Source</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.source}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Pax</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.pax}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Balance</div>
+                  <div className={`font-semibold mt-0.5 ${checkinReceipt.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    ₹{checkinReceipt.balance}
+                  </div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-400 italic text-center pt-3 border-t border-slate-100">
+                Please keep this receipt for your records.
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => { setInvoiceBooking({ ...checkinReceipt, paid: 0 }); setCheckinReceipt(null); }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50">
+                <FileText size={13} /> View Invoice
+              </button>
+              <button onClick={() => setCheckinReceipt(null)}
+                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Confirmation */}
+      {checkoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setCheckoutConfirm(null)}>
+          <div className="bg-white rounded-xl shadow-2xl w-[420px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 text-center border-b border-slate-200">
+              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
+                <FileText size={24} className="text-amber-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-800">Check-Out Guest?</h3>
+              <p className="text-xs text-slate-500 mt-1">Room {checkoutConfirm.roomNumber} — {checkoutConfirm.guestName}</p>
+            </div>
+            <div className="px-6 py-4 space-y-2 text-xs">
+              <div className="flex justify-between py-1"><span className="text-slate-500">Check-In</span><span className="font-medium text-slate-700">{checkoutConfirm.checkIn}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500">Check-Out</span><span className="font-medium text-slate-700">{checkoutConfirm.checkOut}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500">Plan</span><span className="font-medium text-slate-700">{checkoutConfirm.plan}</span></div>
+              <div className="flex justify-between py-1"><span className="text-slate-500">Source</span><span className="font-medium text-slate-700">{checkoutConfirm.source}</span></div>
+              <div className="flex justify-between py-2 border-t border-slate-200 mt-2 text-sm">
+                <span className="font-semibold text-slate-700">Balance</span>
+                <span className="font-bold text-emerald-600">Clear (₹0)</span>
+              </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-[10px] text-blue-700 mt-2">
+                An invoice will be generated automatically after checkout.
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button onClick={() => setCheckoutConfirm(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+              <button onClick={handleCheckoutConfirm} className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">
+                Confirm Check-Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {invoiceBooking && (
+        <InvoiceModal
+          data={{
+            id: invoiceBooking.id,
+            guestName: invoiceBooking.guestName,
+            roomNumber: invoiceBooking.roomNumber,
+            amount: invoiceBooking.balance || 0,
+            total: invoiceBooking.balance || 0,
+            date: new Date().toISOString().slice(0, 10),
+            description: `Room ${invoiceBooking.roomNumber} - ${invoiceBooking.plan} Plan`,
+            items: [],
+            paid: invoiceBooking.balance ? 0 : 0,
+          }}
+          type="booking"
+          onClose={() => setInvoiceBooking(null)}
         />
       )}
     </div>
