@@ -537,7 +537,7 @@ export function AppProvider({ children }) {
 
         const apiRooms = roomsRes.status === 'fulfilled' ? roomsRes.value?.data || [] : [];
         const apiCats = catsRes.status === 'fulfilled' ? catsRes.value?.data || [] : [];
-        const apiBookings = bookingsRes.status === 'fulfilled' ? bookingsRes.value?.data || [] : [];
+        const apiBookings = bookingsRes.status === 'fulfilled' ? bookingsRes.value?.data?.items || [] : [];
         const apiTables = tablesRes.status === 'fulfilled' ? tablesRes.value?.data || [] : [];
         const apiMenu = menuRes.status === 'fulfilled' ? menuRes.value?.data || [] : [];
 
