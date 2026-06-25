@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, Users, Plus, Save, Trash2, UserCog, Mail, KeyRound, Loader2, Download, Upload, AlertTriangle, Server, Database, RotateCcw } from 'lucide-react';
+import { Shield, Users, Plus, Save, Trash2, UserCog, Mail, KeyRound, Loader2, Download, Upload, AlertTriangle, Server, Database, RotateCcw, DoorOpen, ToggleLeft, ToggleRight, Pencil, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { api } from '../services/api';
 import { pmsService } from '../services/pmsService';
@@ -14,7 +14,7 @@ const ROLE_LABELS = {
 };
 
 export default function SettingsPage() {
-  const { user, defaultRules, dispatch, showToast, demoUsers } = useApp();
+  const { user, defaultRules, dispatch, showToast, demoUsers, enabledModules, roomCategories } = useApp();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -26,6 +26,18 @@ export default function SettingsPage() {
   const [demoForm, setDemoForm] = useState({ name: '', email: '', password: '', role: 'staff', isActive: true });
   const [localRules, setLocalRules] = useState(defaultRules || {});
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'staff', isActive: true });
+
+  // Room & Category management
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingCatName, setEditingCatName] = useState('');
+  const [showAddRoom, setShowAddRoom] = useState(null);
+  const [newRoomNumber, setNewRoomNumber] = useState('');
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [editRoomNumber, setEditRoomNumber] = useState('');
+  const [editRoomClean, setEditRoomClean] = useState(true);
+  const [editRoomStatus, setEditRoomStatus] = useState('available');
 
   useEffect(() => {
     if (defaultRules) {
@@ -503,6 +515,205 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors">
                 <RotateCcw size={13} /> Reset System
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Module Management */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <ToggleRight size={14} /> Module Management
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'calendar', label: 'Reservation Calendar' },
+            { id: 'roomview', label: 'Room View' },
+            { id: 'pos', label: 'Restaurant POS' },
+            { id: 'hk', label: 'Housekeeping' },
+            { id: 'pricing', label: 'Pricing / Rates' },
+            { id: 'accounts', label: 'Accounts & Finance' },
+            { id: 'reports', label: 'Reports' },
+          ].map((mod) => (
+            <div key={mod.id} className="flex items-center justify-between px-4 py-3 rounded-lg bg-slate-50">
+              <span className="text-xs font-medium text-slate-700">{mod.label}</span>
+              <button
+                onClick={() => dispatch({ type: 'TOGGLE_MODULE', payload: mod.id })}
+                className={`p-1 rounded-lg transition-colors ${enabledModules[mod.id] ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 hover:bg-slate-100'}`}
+              >
+                {enabledModules[mod.id] ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rooms & Categories Management — Super Admin Only */}
+      {isSuperAdmin && (
+        <div className="bg-white rounded-xl border-2 border-blue-200 overflow-hidden">
+          <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
+            <h3 className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-2">
+              <DoorOpen size={14} /> Rooms & Categories
+            </h3>
+            <button onClick={() => { setNewCategoryName(''); setShowAddCategory(true); }}
+              className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> Add Category
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {roomCategories.map((cat) => (
+              <div key={cat.name} className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+                  {editingCategory === cat.name ? (
+                    <div className="flex items-center gap-2">
+                      <input type="text" value={editingCatName} onChange={e => setEditingCatName(e.target.value)}
+                        className="px-2 py-1 text-xs border border-slate-200 rounded-lg w-48" autoFocus />
+                      <button onClick={() => {
+                        if (editingCatName.trim()) {
+                          dispatch({ type: 'UPDATE_CATEGORY', payload: { oldName: cat.name, newName: editingCatName } });
+                          showToast('Category renamed');
+                        }
+                        setEditingCategory(null);
+                      }} className="text-[10px] bg-blue-500 text-white px-2 py-1 rounded-lg font-semibold"><Save size={12} /></button>
+                      <button onClick={() => setEditingCategory(null)} className="text-[10px] text-slate-400 hover:text-slate-600"><X size={12} /></button>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-semibold text-slate-700">{cat.name}</span>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">{cat.rooms.length} rooms</span>
+                    <button onClick={() => { setEditingCategory(cat.name); setEditingCatName(cat.name); }}
+                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <Pencil size={12} />
+                    </button>
+                    <button onClick={() => { setShowAddRoom(cat.name); setNewRoomNumber(''); }}
+                      className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                      <Plus size={12} />
+                    </button>
+                    <button onClick={() => {
+                      if (confirm(`Delete category "${cat.name}" and all its rooms?`)) {
+                        dispatch({ type: 'DELETE_CATEGORY', payload: cat.name });
+                        showToast(`Category "${cat.name}" deleted`);
+                      }
+                    }} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {cat.rooms.map((room) => (
+                    <div key={room.number} className="flex items-center justify-between px-4 py-2 hover:bg-slate-50 transition-colors">
+                      {editingRoom === room.number ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input type="number" value={editRoomNumber} onChange={e => setEditRoomNumber(e.target.value)}
+                            className="w-20 px-2 py-1 text-xs border border-slate-200 rounded-lg" placeholder="Number" />
+                          <select value={editRoomStatus} onChange={e => setEditRoomStatus(e.target.value)}
+                            className="px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white">
+                            <option value="available">Available</option>
+                            <option value="ooo">Out of Order</option>
+                          </select>
+                          <label className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                            <input type="checkbox" checked={editRoomClean} onChange={e => setEditRoomClean(e.target.checked)} className="accent-emerald-500" />
+                            Clean
+                          </label>
+                          <button onClick={() => {
+                            if (editRoomNumber) {
+                              dispatch({
+                                type: 'UPDATE_ROOM',
+                                payload: {
+                                  categoryName: cat.name,
+                                  roomNumber: room.number,
+                                  updates: { number: parseInt(editRoomNumber), clean: editRoomClean, status: editRoomStatus },
+                                },
+                              });
+                              showToast('Room updated');
+                            }
+                            setEditingRoom(null);
+                          }} className="text-[10px] bg-blue-500 text-white px-2 py-1 rounded-lg font-semibold"><Save size={11} /></button>
+                          <button onClick={() => setEditingRoom(null)} className="text-[10px] text-slate-400 hover:text-slate-600"><X size={11} /></button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <DoorOpen size={13} className="text-slate-400" />
+                            <span className="text-xs font-semibold text-slate-700">{room.number}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                              room.status === 'available' ? (room.clean ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')
+                                : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {room.status === 'available' ? (room.clean ? 'Clean' : 'Dirty') : 'OOO'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => {
+                              setEditingRoom(room.number);
+                              setEditRoomNumber(room.number.toString());
+                              setEditRoomClean(room.clean);
+                              setEditRoomStatus(room.status);
+                            }} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                              <Pencil size={11} />
+                            </button>
+                            <button onClick={() => {
+                              if (confirm(`Delete room ${room.number}?`)) {
+                                dispatch({ type: 'DELETE_ROOM', payload: { categoryName: cat.name, roomNumber: room.number } });
+                                showToast(`Room ${room.number} deleted`);
+                              }
+                            }} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowAddCategory(false)}>
+          <div className="bg-white rounded-xl shadow-xl w-[380px] p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-slate-800 mb-4">Add Room Category</h3>
+            <input type="text" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)}
+              placeholder="e.g., DELUXE SUITES" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg mb-4" autoFocus />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowAddCategory(false)} className="px-4 py-1.5 text-xs font-semibold text-slate-600">Cancel</button>
+              <button onClick={() => {
+                if (!newCategoryName.trim()) return alert('Category name required');
+                dispatch({ type: 'ADD_CATEGORY', payload: { name: newCategoryName } });
+                setShowAddCategory(false);
+                showToast(`Category "${newCategoryName}" created`);
+              }} className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Room Modal */}
+      {showAddRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowAddRoom(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-[380px] p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">Add Room</h3>
+            <p className="text-[10px] text-slate-500 mb-4">Category: {showAddRoom}</p>
+            <input type="number" value={newRoomNumber} onChange={e => setNewRoomNumber(e.target.value)}
+              placeholder="Room number (e.g., 401)" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg mb-4" autoFocus />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowAddRoom(null)} className="px-4 py-1.5 text-xs font-semibold text-slate-600">Cancel</button>
+              <button onClick={() => {
+                if (!newRoomNumber) return alert('Room number required');
+                const num = parseInt(newRoomNumber);
+                if (isNaN(num)) return alert('Enter a valid room number');
+                dispatch({ type: 'ADD_ROOM', payload: { categoryName: showAddRoom, room: { number: num } } });
+                setShowAddRoom(null);
+                showToast(`Room ${num} added`);
+              }} className="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">Add Room</button>
             </div>
           </div>
         </div>

@@ -18,12 +18,12 @@ import LoginPage from './pages/LoginPage';
 import { sidebarModules } from './data/mockData';
 
 function AppInner() {
-  const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels, usingMockData } = useApp();
+  const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels, usingMockData, enabledModules } = useApp();
   const [activeModule, setActiveModule] = useState('calendar');
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookingPrefill, setBookingPrefill] = useState(null);
 
-  // If user role changes, ensure they are redirected away from forbidden views
+  // If user role changes or module disabled, redirect away from forbidden views
   useEffect(() => {
     const role = user?.role;
     if (role === 'hk_staff' && activeModule !== 'hk') {
@@ -32,8 +32,10 @@ function AppInner() {
       setActiveModule('calendar');
     } else if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
       setActiveModule('calendar');
+    } else if (enabledModules[activeModule] === false) {
+      setActiveModule('dashboard');
     }
-  }, [user, activeModule]);
+  }, [user, activeModule, enabledModules]);
 
   // Loading indicator
   if (loading || !authChecked) {

@@ -34,6 +34,11 @@ const initialState = {
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
   },
   emailScheduler: { enabled: false, email: 'manager@yoyofun.in', time: '06:00 AM' },
+  enabledModules: {
+    dashboard: true, calendar: true, roomview: true,
+    pos: true, hk: true, pricing: true,
+    accounts: true, reports: true, settings: true,
+  },
 };
 
 function reducer(state, action) {
@@ -149,6 +154,83 @@ function reducer(state, action) {
       return { ...state, demoUsers: state.demoUsers.map(u => u.id === action.payload.id ? { ...u, ...action.payload } : u) };
     case 'DELETE_DEMO_USER':
       return { ...state, demoUsers: state.demoUsers.filter(u => u.id !== action.payload) };
+    // Room & Category CRUD
+    case 'ADD_CATEGORY': {
+      const newCat = { name: action.payload.name.toUpperCase(), rooms: [] };
+      return { ...state, roomCategories: [...state.roomCategories, newCat] };
+    }
+    case 'UPDATE_CATEGORY': {
+      const { oldName, newName } = action.payload;
+      return {
+        ...state,
+        roomCategories: state.roomCategories.map(c =>
+          c.name === oldName ? { ...c, name: newName.toUpperCase() } : c
+        ),
+      };
+    }
+    case 'DELETE_CATEGORY': {
+      const name = action.payload;
+      return {
+        ...state,
+        roomCategories: state.roomCategories.filter(c => c.name !== name),
+        roomStatuses: state.roomStatuses.filter(r => {
+          const cat = state.roomCategories.find(c => c.name === name);
+          return !cat || !cat.rooms.some(rm => rm.number === r.number);
+        }),
+      };
+    }
+    case 'ADD_ROOM': {
+      const { categoryName, room } = action.payload;
+      return {
+        ...state,
+        roomCategories: state.roomCategories.map(c =>
+          c.name === categoryName
+            ? { ...c, rooms: [...c.rooms, { number: room.number, clean: true, status: 'available' }] }
+            : c
+        ),
+        roomStatuses: [
+          ...state.roomStatuses,
+          { number: room.number, status: 'available', cleanStatus: 'clean', floor: Math.floor(room.number / 100), oooReason: undefined },
+        ],
+      };
+    }
+    case 'UPDATE_ROOM': {
+      const { categoryName, roomNumber, updates } = action.payload;
+      return {
+        ...state,
+        roomCategories: state.roomCategories.map(c =>
+          c.name === categoryName
+            ? { ...c, rooms: c.rooms.map(r => r.number === roomNumber ? { ...r, ...updates } : r) }
+            : c
+        ),
+        roomStatuses: state.roomStatuses.map(r =>
+          r.number === roomNumber ? { ...r, ...updates, cleanStatus: updates.clean !== undefined ? (updates.clean ? 'clean' : 'dirty') : r.cleanStatus, status: updates.status || r.status } : r
+        ),
+      };
+    }
+    case 'DELETE_ROOM': {
+      const { categoryName, roomNumber } = action.payload;
+      return {
+        ...state,
+        roomCategories: state.roomCategories.map(c =>
+          c.name === categoryName
+            ? { ...c, rooms: c.rooms.filter(r => r.number !== roomNumber) }
+            : c
+        ),
+        roomStatuses: state.roomStatuses.filter(r => r.number !== roomNumber),
+      };
+    }
+    // Module enable/disable
+    case 'TOGGLE_MODULE':
+      return {
+        ...state,
+        enabledModules: {
+          ...state.enabledModules,
+          [action.payload]: !state.enabledModules[action.payload],
+        },
+      };
+    case 'SET_MODULES':
+      return { ...state, enabledModules: { ...state.enabledModules, ...action.payload } };
     case 'RESET_DATA':
       return initialState;
     default:
@@ -805,7 +887,7 @@ export function AppProvider({ children }) {
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,
     menuItems: state.menuItems, pricingRates: state.pricingRates, stopSell: state.stopSell, dateRateOverrides: state.dateRateOverrides,
     transactions: state.transactions, vouchers, roles: state.roles, demoUsers: state.demoUsers,
-    defaultRules: state.defaultRules, emailScheduler: state.emailScheduler,
+    defaultRules: state.defaultRules, emailScheduler: state.emailScheduler, enabledModules: state.enabledModules,
     dates, dayLabels, todayStats, housekeepingStats, dashboardKPI, dailyRevenue, revenueBreakdown,
     posOrders, todayIncome, totalRooms, occupiedCount, vacantCount,
     occupancyRate, totalRevenue, totalExpenses, adr, revpar,

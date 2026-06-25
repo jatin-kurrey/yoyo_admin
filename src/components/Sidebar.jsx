@@ -11,7 +11,7 @@ const iconMap = {
 };
 
 export default function Sidebar({ modules, activeModule, onNavigate }) {
-  const { user, setUser, showToast } = useApp();
+  const { user, setUser, showToast, state } = useApp();
 
   const handleLogout = async () => {
     try {
@@ -42,7 +42,7 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
     return 'Staff Member';
   };
 
-  // Filter modules based on user role
+  // Filter modules based on user role and enabled modules
   const role = user?.role;
   const isStaff = role === 'staff' || role === 'booking_staff';
   const isHKStaff = role === 'hk_staff';
@@ -51,7 +51,10 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
     if (role === 'booking_staff') return ['calendar', 'roomview', 'reports'].includes(mod.id);
     if (isStaff) return !['pricing', 'accounts', 'settings'].includes(mod.id);
     return true;
-  });
+  }).filter(mod => mod.id === 'settings' || state.enabledModules[mod.id] !== false);
+
+  // Ensure current active module hasn't been disabled
+  // (handled by AppInner useEffect)
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-slate-800 text-white flex flex-col h-full overflow-hidden">
