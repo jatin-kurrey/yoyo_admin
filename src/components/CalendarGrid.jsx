@@ -11,8 +11,9 @@ const statusColors = {
   'future': { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-700', label: 'Future Booking' },
 };
 
-export default function CalendarGrid({ dates, dayLabels, roomCategories, bookings, todayIdx, onCellClick }) {
+export default function CalendarGrid({ roomCategories, bookings, onCellClick }) {
   const { dispatch } = useApp();
+  const [viewRange, setViewRange] = useState(7); // 7, 30, 90, 180 days
   const [tooltip, setTooltip] = useState(null);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -24,6 +25,30 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const [invoiceBooking, setInvoiceBooking] = useState(null);
   const [checkinReceipt, setCheckinReceipt] = useState(null);
   const [checkoutConfirm, setCheckoutConfirm] = useState(null);
+
+  const today = useMemo(() => new Date(), []);
+  const todayStr = useMemo(() => today.toISOString().slice(0, 10), [today]);
+
+  const generatedDates = useMemo(() => {
+    return Array.from({ length: viewRange }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+  }, [viewRange, today]);
+
+  const generatedDayLabels = useMemo(() => {
+    return generatedDates.map((d, i) => {
+      if (i === 0) return 'Today';
+      const dt = new Date(d + 'T00:00:00');
+      const day = dt.toLocaleDateString('en-IN', { weekday: 'short' });
+      const date = dt.getDate();
+      const mon = dt.toLocaleDateString('en-IN', { month: 'short' });
+      return `${day} ${date} ${mon}`;
+    });
+  }, [generatedDates]);
+
+  const todayIdx = 0;
 
   const filteredBookings = useMemo(() => {
     return (bookings || []).filter(b => {
@@ -38,12 +63,12 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
     return filteredBookings.find(b => b.roomNumber === roomNumber && date >= b.checkIn && date < b.checkOut);
   };
 
-  const getBookingSpan = (booking) => {
+  const getBookingVisibleSpan = (booking, dateIdx) => {
     if (!booking) return 0;
-    const start = new Date(booking.checkIn);
-    const end = new Date(booking.checkOut);
-    const span = Math.round((end - start) / (1000 * 60 * 60 * 24));
-    return Math.max(1, span);
+    const checkOutStr = booking.checkOut;
+    const checkOutIdx = generatedDates.indexOf(checkOutStr);
+    const endIdx = checkOutIdx !== -1 ? checkOutIdx : generatedDates.length;
+    return Math.max(1, endIdx - dateIdx);
   };
 
   const handleCheckinClick = (booking) => {
@@ -156,6 +181,24 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
             <option value="future">Future</option>
           </select>
         </div>
+        
+        {/* Calendar Range Switcher */}
+        <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-100">
+          {[
+            { label: '7 Days', value: 7 },
+            { label: '1 Month', value: 30 },
+            { label: '3 Months', value: 90 },
+            { label: '6 Months', value: 180 }
+          ].map(opt => (
+            <button key={opt.value} onClick={() => setViewRange(opt.value)}
+              className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+                viewRange === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <div className="text-[10px] text-slate-400 font-medium ml-auto">
           {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''} shown
         </div>
@@ -167,7 +210,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
           <thead>
             <tr className="sticky top-0 z-10 bg-slate-50">
               <th className="w-[200px] min-w-[200px] px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-r border-b border-slate-200 bg-slate-50">Rooms</th>
-              {dayLabels.map((label, i) => (
+              {generatedDayLabels.map((label, i) => (
                 <th key={label} className={`w-[100px] min-w-[100px] px-2 py-3 text-center border-r border-b border-slate-200 ${i === todayIdx ? 'bg-blue-50' : 'bg-slate-50'}`}>
                   <div className="text-[11px] font-semibold text-slate-600">{label}</div>
                   {i === todayIdx && <div className="text-[9px] text-blue-600 font-medium mt-0.5">Today</div>}
@@ -180,7 +223,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
               <Fragment key={cat.name}>
                 {/* Category Header Row */}
                 <tr key={`cat-${cat.name}`} className="bg-slate-100/80">
-                  <td className="px-4 py-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200" colSpan={dates.length + 1}>
+                  <td className="px-4 py-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200" colSpan={generatedDates.length + 1}>
                     {cat.name}
                   </td>
                 </tr>
@@ -202,12 +245,12 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
                         </div>
                       </td>
 
-                      {dates.map((date, dateIdx) => {
+                      {generatedDates.map((date, dateIdx) => {
                         if (skipUntil > dateIdx) return null;
 
                         const booking = getBookingForDay(room.number, date);
                         if (booking) {
-                          const span = getBookingSpan(booking);
+                          const span = getBookingVisibleSpan(booking, dateIdx);
                           skipUntil = dateIdx + span;
                           const sc = statusColors[booking.status] || statusColors['future'];
 

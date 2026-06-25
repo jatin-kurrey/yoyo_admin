@@ -81,11 +81,8 @@ function AppInner() {
       default:
         return (
           <CalendarGrid
-            dates={dates}
-            dayLabels={dayLabels}
             roomCategories={roomCategories}
             bookings={bookings}
-            todayIdx={0}
             onCellClick={(room, date) => openNewBooking(room, date)}
           />
         );
