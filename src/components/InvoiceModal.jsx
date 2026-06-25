@@ -25,8 +25,10 @@ export default function InvoiceModal({ data, type, onClose }) {
   const subtotal = data?.total || data?.amount || 0;
   const taxAmt = Math.round(subtotal * taxRate / 100);
   const grandTotal = subtotal + taxAmt;
-  const paidAmt = data?.paid || 0;
-  const balanceAmt = grandTotal - paidAmt;
+  const advancePaid = data?.advancePaid || 0;
+  const checkoutPaid = data?.checkoutPaid || 0;
+  const totalPaid = data?.totalPaid || (advancePaid + checkoutPaid) || data?.paid || 0;
+  const balanceAmt = Math.max(0, grandTotal - totalPaid);
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
@@ -122,14 +124,30 @@ export default function InvoiceModal({ data, type, onClose }) {
           </table>
         </div>
 
-        <div style="display: flex; justify-content: flex-end;">
-          <table style="width: 300px;">
-            <tr><td style="padding: 4px 10px;">Subtotal</td><td style="padding: 4px 10px; text-align: right;">₹${subtotal.toLocaleString()}</td></tr>
+        ${data?.checkIn ? `
+        <div class="section">
+          <div class="section-title">Stay Details</div>
+          <div style="font-size: 11px; display: flex; gap: 30px;">
+            <div><strong>Check-In:</strong> ${data.checkIn}</div>
+            <div><strong>Check-Out:</strong> ${data.checkOut}</div>
+          </div>
+        </div>
+        ` : ''}
+
+        <div class="section">
+          <div class="section-title">Payment Summary</div>
+          <table style="width: 100%; max-width: 450px; margin-left: auto;">
+            <tr><td style="padding: 4px 10px;">Room Charges</td><td style="padding: 4px 10px; text-align: right;">₹${subtotal.toLocaleString()}</td></tr>
             <tr><td style="padding: 4px 10px;">GST (${taxRate}%)</td><td style="padding: 4px 10px; text-align: right;">₹${taxAmt.toLocaleString()}</td></tr>
             <tr class="total-row"><td style="padding: 8px 10px; font-size: 14px;">Grand Total</td><td style="padding: 8px 10px; text-align: right; font-size: 14px;">₹${grandTotal.toLocaleString()}</td></tr>
-            ${paidAmt > 0 ? `<tr><td style="padding: 4px 10px; color: #059669;">Paid</td><td style="padding: 4px 10px; text-align: right; color: #059669;">₹${paidAmt.toLocaleString()}</td></tr>` : ''}
-            ${balanceAmt > 0 ? `<tr><td style="padding: 4px 10px; color: #dc2626; font-weight: bold;">Balance Due</td><td style="padding: 4px 10px; text-align: right; color: #dc2626; font-weight: bold;">₹${balanceAmt.toLocaleString()}</td></tr>` : ''}
-            ${balanceAmt <= 0 && paidAmt > 0 ? `<tr><td style="padding: 4px 10px; color: #059669; font-weight: bold;">Status</td><td style="padding: 4px 10px; text-align: right;"><span class="badge badge-paid">Paid in Full</span></td></tr>` : ''}
+            ${advancePaid > 0 ? `<tr><td style="padding: 4px 10px; color: #059669;">Advance Paid at Check-In</td><td style="padding: 4px 10px; text-align: right; color: #059669;">- ₹${advancePaid.toLocaleString()}</td></tr>` : ''}
+            ${advancePaid > 0 ? `<tr style="color: #d97706;"><td style="padding: 4px 10px; font-weight: 500;">Balance Due at Check-In</td><td style="padding: 4px 10px; text-align: right; font-weight: 500;">₹${Math.max(0, grandTotal - advancePaid).toLocaleString()}</td></tr>` : ''}
+            ${checkoutPaid > 0 ? `<tr><td style="padding: 4px 10px; color: #059669;">Paid at Check-Out</td><td style="padding: 4px 10px; text-align: right; color: #059669;">- ₹${checkoutPaid.toLocaleString()}</td></tr>` : ''}
+            <tr style="font-weight: bold; ${balanceAmt > 0 ? 'color: #dc2626;' : 'color: #059669;'} border-top: 2px solid #1e293b;">
+              <td style="padding: 8px 10px;">${balanceAmt > 0 ? 'Balance Due' : 'Total Paid'}</td>
+              <td style="padding: 8px 10px; text-align: right;">₹${(balanceAmt > 0 ? balanceAmt : totalPaid).toLocaleString()}</td>
+            </tr>
+            ${balanceAmt <= 0 && totalPaid > 0 ? `<tr><td colspan="2" style="text-align: right; padding-top: 8px;"><span class="badge badge-paid">PAID IN FULL</span></td></tr>` : ''}
           </table>
         </div>
 
@@ -264,35 +282,74 @@ export default function InvoiceModal({ data, type, onClose }) {
             </table>
           </div>
 
-          <div className="flex justify-end mb-5">
-            <div className="w-72 space-y-1 text-xs">
-              <div className="flex justify-between py-1">
-                <span className="text-slate-600">Subtotal</span>
-                <span className="font-semibold text-slate-800">₹{subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-600">GST ({taxRate}%)</span>
-                <span className="font-semibold text-slate-800">₹{taxAmt.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2 border-t-2 border-slate-800 text-sm font-bold text-slate-800">
-                <span>Grand Total</span>
-                <span>₹{grandTotal.toLocaleString()}</span>
-              </div>
-              {paidAmt > 0 && (
-                <div className="flex justify-between py-1 text-emerald-600">
-                  <span>Paid</span>
-                  <span className="font-semibold">₹{paidAmt.toLocaleString()}</span>
+          {/* Payment Summary */}
+          {data?.checkIn && (
+            <div className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
+              <div className="bg-slate-50 px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Stay Details</div>
+              <div className="grid grid-cols-2 gap-3 p-4 text-xs">
+                <div>
+                  <span className="text-slate-500">Check-In</span>
+                  <span className="ml-2 font-medium text-slate-700">{data.checkIn}</span>
                 </div>
-              )}
-              {balanceAmt > 0 && (
-                <div className="flex justify-between py-1 text-red-600 font-bold">
-                  <span>Balance Due</span>
-                  <span>₹{balanceAmt.toLocaleString()}</span>
+                <div>
+                  <span className="text-slate-500">Check-Out</span>
+                  <span className="ml-2 font-medium text-slate-700">{data.checkOut}</span>
                 </div>
-              )}
-              {balanceAmt <= 0 && paidAmt > 0 && (
-                <div className="flex justify-end py-1">
-                  <span className="text-[9px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">PAID IN FULL</span>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Timeline */}
+          <div className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="bg-slate-50 px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Payment Summary</div>
+            <div className="p-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left py-1.5 text-[9px] font-semibold text-slate-500 uppercase">Particulars</th>
+                    <th className="text-right py-1.5 text-[9px] font-semibold text-slate-500 uppercase">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-2 text-slate-700">Room Charges ({data.checkIn || ''} to {data.checkOut || ''})</td>
+                    <td className="py-2 text-right font-semibold text-slate-800">{subtotal.toLocaleString()}</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-2 text-slate-700">GST @ {taxRate}%</td>
+                    <td className="py-2 text-right font-semibold text-slate-800">{taxAmt.toLocaleString()}</td>
+                  </tr>
+                  <tr className="border-b-2 border-slate-800 font-bold">
+                    <td className="py-2 text-slate-800">Grand Total</td>
+                    <td className="py-2 text-right text-slate-800">{grandTotal.toLocaleString()}</td>
+                  </tr>
+                  {advancePaid > 0 && (
+                    <tr className="text-emerald-600">
+                      <td className="py-2">Advance Paid at Check-In</td>
+                      <td className="py-2 text-right font-semibold">- {advancePaid.toLocaleString()}</td>
+                    </tr>
+                  )}
+                  {advancePaid > 0 && (
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 text-amber-700 font-medium">Balance Due at Check-In</td>
+                      <td className="py-2 text-right font-semibold text-amber-700">{Math.max(0, grandTotal - advancePaid).toLocaleString()}</td>
+                    </tr>
+                  )}
+                  {checkoutPaid > 0 && (
+                    <tr className="text-emerald-600">
+                      <td className="py-2">Paid at Check-Out</td>
+                      <td className="py-2 text-right font-semibold">- {checkoutPaid.toLocaleString()}</td>
+                    </tr>
+                  )}
+                  <tr className={`border-t-2 font-bold ${balanceAmt > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    <td className="pt-2">{balanceAmt > 0 ? 'Balance Due' : 'Total Paid'}</td>
+                    <td className="pt-2 text-right">{balanceAmt > 0 ? balanceAmt.toLocaleString() : totalPaid.toLocaleString()}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {balanceAmt <= 0 && totalPaid > 0 && (
+                <div className="mt-3 text-center">
+                  <span className="text-[9px] bg-emerald-50 text-emerald-700 px-3 py-1 rounded font-semibold">✓ PAID IN FULL</span>
                 </div>
               )}
             </div>

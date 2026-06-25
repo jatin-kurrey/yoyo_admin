@@ -67,7 +67,13 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const handleCheckoutConfirm = () => {
     if (!checkoutConfirm) return;
     dispatch({ type: 'CHECK_OUT', payload: checkoutConfirm.id });
-    setInvoiceBooking({ ...checkoutConfirm, paid: 0 });
+    setInvoiceBooking({
+      ...checkoutConfirm,
+      advancePaid: checkoutConfirm.advancePaid || 0,
+      checkoutPaid: 0,
+      totalPaid: checkoutConfirm.advancePaid || 0,
+      balance: 0,
+    });
     setCheckoutConfirm(null);
   };
 
@@ -105,7 +111,14 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
     dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
 
     // Show invoice after settlement checkout
-    setInvoiceBooking({ ...settlementBooking, paid: amount });
+    const totalPaid = (settlementBooking.advancePaid || 0) + amount;
+    setInvoiceBooking({
+      ...settlementBooking,
+      advancePaid: settlementBooking.advancePaid || 0,
+      checkoutPaid: amount,
+      totalPaid,
+      balance: Math.max(0, (settlementBooking.totalAmount || settlementBooking.balance || 0) - totalPaid),
+    });
     setSettlementBooking(null);
   };
 
@@ -357,18 +370,30 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
                   <div className="font-semibold text-slate-800 mt-0.5">{checkinReceipt.pax}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Balance</div>
-                  <div className={`font-semibold mt-0.5 ${checkinReceipt.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    ₹{checkinReceipt.balance}
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Advance Paid</div>
+                  <div className="font-semibold text-emerald-600 mt-0.5">₹{checkinReceipt.advancePaid || 0}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Due Now</div>
+                  <div className={`font-semibold mt-0.5 ${checkinReceipt.balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {checkinReceipt.balance > 0 ? `₹${checkinReceipt.balance}` : 'Clear'}
                   </div>
                 </div>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 flex items-center justify-between border border-slate-200 mt-2">
+                <span className="text-xs text-slate-600 font-medium">Total Stay Amount</span>
+                <span className="text-sm font-bold text-slate-800">₹{checkinReceipt.totalAmount || checkinReceipt.balance || 0}</span>
               </div>
               <div className="text-[10px] text-slate-400 italic text-center pt-3 border-t border-slate-100">
                 Please keep this receipt for your records.
               </div>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
-              <button onClick={() => { setInvoiceBooking({ ...checkinReceipt, paid: 0 }); setCheckinReceipt(null); }}
+              <button onClick={() => {
+                const ap = checkinReceipt.advancePaid || 0;
+                setInvoiceBooking({ ...checkinReceipt, advancePaid: ap, checkoutPaid: 0, totalPaid: ap, paid: ap });
+                setCheckinReceipt(null);
+              }}
                 className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50">
                 <FileText size={13} /> View Invoice
               </button>
@@ -421,12 +446,17 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
             id: invoiceBooking.id,
             guestName: invoiceBooking.guestName,
             roomNumber: invoiceBooking.roomNumber,
-            amount: invoiceBooking.balance || 0,
-            total: invoiceBooking.balance || 0,
+            checkIn: invoiceBooking.checkIn,
+            checkOut: invoiceBooking.checkOut,
+            amount: invoiceBooking.totalAmount || invoiceBooking.balance || 0,
+            total: invoiceBooking.totalAmount || invoiceBooking.balance || 0,
+            advancePaid: invoiceBooking.advancePaid || 0,
+            checkoutPaid: invoiceBooking.checkoutPaid || 0,
+            totalPaid: invoiceBooking.totalPaid || (invoiceBooking.advancePaid || 0) + (invoiceBooking.checkoutPaid || 0),
             date: new Date().toISOString().slice(0, 10),
-            description: `Room ${invoiceBooking.roomNumber} - ${invoiceBooking.plan} Plan`,
+            description: `Room ${invoiceBooking.roomNumber} - ${invoiceBooking.plan} Plan (${invoiceBooking.checkIn} to ${invoiceBooking.checkOut})`,
             items: [],
-            paid: invoiceBooking.balance ? 0 : 0,
+            paid: invoiceBooking.totalPaid || 0,
           }}
           type="booking"
           onClose={() => setInvoiceBooking(null)}
