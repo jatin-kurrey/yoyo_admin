@@ -193,8 +193,8 @@ export function AppProvider({ children }) {
             children: data.children ?? (parseInt(data.pax?.split('+')[1]) || 0),
             plan: data.plan || 'EP',
             source: data.source || 'Walk-In',
-            check_in: data.checkIn,
-            check_out: data.checkOut,
+            check_in: `${data.checkIn}T00:00:00Z`,
+            check_out: `${data.checkOut}T00:00:00Z`,
             rate_per_night: data.rate || 4000,
           });
           const b = res.data;
