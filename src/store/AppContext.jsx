@@ -515,6 +515,14 @@ export function AppProvider({ children }) {
       }
 
       try {
+        const cachedUser = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('yoyo_admin_user'));
+          } catch { return null; }
+        })();
+        const currentUser = user || cachedUser;
+        const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin');
+
         const [roomsRes, catsRes, bookingsRes, tablesRes, menuRes, txnsRes, settingsRes, overridesRes, usersRes] = await Promise.allSettled([
           pmsService.getRooms(),
           pmsService.getCategories(),
@@ -524,7 +532,7 @@ export function AppProvider({ children }) {
           pmsService.getTransactions({}),
           pmsService.getSettings(),
           pmsService.getRateOverrides(),
-          api.admin.get('/users?limit=100'),
+          isAdmin ? api.admin.get('/users?limit=100') : Promise.resolve({ success: true, data: { items: [] } }),
         ]);
 
         const apiRooms = roomsRes.status === 'fulfilled' ? roomsRes.value?.data || [] : [];
