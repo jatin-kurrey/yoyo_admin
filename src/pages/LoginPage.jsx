@@ -21,19 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    // Demo credentials from context
-    const demoEntry = demoUsers.find(d => d.email === email);
-    if (demoEntry && demoEntry.password === password) {
-      setTimeout(() => {
-        const u = { name: demoEntry.name, email: demoEntry.email, role: demoEntry.role };
-        setUser(u);
-        localStorage.setItem('yoyo_admin_user', JSON.stringify(u));
-        localStorage.removeItem('yoyo_admin_token');
-        showToast(`Logged in as ${demoEntry.name} (Local)`);
-        setLoading(false);
-      }, 800);
-      return;
-    }
+
 
     try {
       const res = await api.login(email, password);
