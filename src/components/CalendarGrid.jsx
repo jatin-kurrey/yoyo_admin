@@ -1,9 +1,11 @@
 import { useState, useMemo, Fragment } from 'react';
 import { Sparkles, MoreHorizontal, Search, Filter, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import EditFolioModal from './EditFolioModal';
 
 const statusColors = {
   'checked-in': { bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', text: 'text-emerald-700', label: 'Checked In' },
+  'checked-out': { bg: 'bg-slate-400', hover: 'hover:bg-slate-500', text: 'text-slate-500', label: 'Checked Out' },
   'hold': { bg: 'bg-amber-500', hover: 'hover:bg-amber-600', text: 'text-amber-700', label: 'On Hold' },
   'future': { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', text: 'text-blue-700', label: 'Future Booking' },
 };
@@ -17,6 +19,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
   const [settlementBooking, setSettlementBooking] = useState(null);
   const [settlementAmount, setSettlementAmount] = useState('');
   const [settlementMode, setSettlementMode] = useState('Cash');
+  const [selectedFolioBooking, setSelectedFolioBooking] = useState(null);
 
   const filteredBookings = useMemo(() => {
     return (bookings || []).filter(b => {
@@ -119,6 +122,7 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-2 py-1 border border-slate-200 rounded text-[10px] bg-white focus:outline-none">
             <option value="all">All Status</option>
             <option value="checked-in">Checked In</option>
+            <option value="checked-out">Checked Out</option>
             <option value="hold">On Hold</option>
             <option value="future">Future</option>
           </select>
@@ -203,14 +207,24 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
                                       <div className="text-slate-500 text-[10px]">Room {booking.roomNumber}</div>
                                     </div>
                                     <div className="px-3 space-y-1.5 py-1">
+                                      <div className="flex justify-between"><span className="text-slate-500">Status</span><span className={`font-semibold capitalize ${booking.status === 'checked-in' ? 'text-emerald-600' : booking.status === 'checked-out' ? 'text-slate-500' : 'text-blue-600'}`}>{booking.status?.replace('-', ' ')}</span></div>
                                       <div className="flex justify-between"><span className="text-slate-500">Source</span><span className="font-medium">{booking.source}</span></div>
                                       <div className="flex justify-between"><span className="text-slate-500">Balance</span><span className={`font-semibold ${booking.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>₹{booking.balance}</span></div>
                                       <div className="text-[10px] text-slate-400 mt-1">{booking.checkIn} → {booking.checkOut}</div>
                                     </div>
                                     <div className="px-3 pt-2 border-t border-slate-100 mt-1 flex gap-1 flex-wrap">
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 cursor-pointer hover:bg-slate-200">Edit Folio</span>
-                                      <span onClick={(e) => { e.stopPropagation(); handleCheckOut(booking.id); }} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">Check-out</span>
-                                      <span onClick={(e) => { e.stopPropagation(); handleDelete(booking.id); }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 cursor-pointer hover:bg-red-100">Cancel</span>
+                                      {booking.status !== 'checked-out' && (
+                                        <span onClick={(e) => { e.stopPropagation(); setSelectedFolioBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 cursor-pointer hover:bg-slate-200">Edit Folio</span>
+                                      )}
+                                      {(booking.status === 'future' || booking.status === 'hold') && (
+                                        <span onClick={(e) => { e.stopPropagation(); dispatch({ type: 'CHECK_IN', payload: booking.id }); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200">Check-in</span>
+                                      )}
+                                      {booking.status === 'checked-in' && (
+                                        <span onClick={(e) => { e.stopPropagation(); handleCheckOut(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">Check-out</span>
+                                      )}
+                                      {booking.status !== 'checked-out' && (
+                                        <span onClick={(e) => { e.stopPropagation(); handleDelete(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 cursor-pointer hover:bg-red-100">Cancel</span>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -277,6 +291,13 @@ export default function CalendarGrid({ dates, dayLabels, roomCategories, booking
             </div>
           </div>
         </div>
+      )}
+
+      {selectedFolioBooking && (
+        <EditFolioModal
+          booking={selectedFolioBooking}
+          onClose={() => setSelectedFolioBooking(null)}
+        />
       )}
     </div>
   );
