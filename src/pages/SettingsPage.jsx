@@ -337,6 +337,10 @@ export default function SettingsPage() {
                     <span className="text-xs text-slate-600">Min Advance Fixed Amount (₹)</span>
                     <input type="number" value={localRules?.minAdvanceAmt || 0} onChange={e => setLocalRules({...localRules, minAdvanceAmt: +e.target.value})} className="w-24 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-right" />
                   </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-xs text-slate-600 font-semibold text-slate-700">Single Payment Mode (Full Payment at Check-In)</span>
+                    <input type="checkbox" checked={localRules?.singlePaymentMode || false} onChange={e => setLocalRules({...localRules, singlePaymentMode: e.target.checked})} className="w-4 h-4 text-slate-800 border-slate-200 rounded focus:ring-slate-500" />
+                  </div>
                 </div>
               </div>
             </div>

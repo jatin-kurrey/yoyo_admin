@@ -60,7 +60,10 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
 
   const minPct = defaultRules?.minAdvancePct || 0;
   const minAmt = defaultRules?.minAdvanceAmt || 0;
-  const minRequiredAmount = Math.max(minAmt, Math.round(total * minPct / 100));
+  const isSinglePayment = defaultRules?.singlePaymentMode;
+  const minRequiredAmount = isSinglePayment
+    ? total
+    : Math.max(minAmt, Math.round(total * minPct / 100));
 
   const handleSubmit = () => {
     if (!form.guestName.trim()) return alert('Enter guest name');
@@ -73,7 +76,11 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     if (!isFuture && minRequiredAmount > 0) {
       const paid = Number(payment.amount) || 0;
       if (paid < minRequiredAmount) {
-        return alert(`Minimum advance payment of ₹${minRequiredAmount} is required to check-in.`);
+        if (isSinglePayment) {
+          return alert(`Full payment of ₹${minRequiredAmount} is required to check-in (Single Payment Mode enabled).`);
+        } else {
+          return alert(`Minimum advance payment of ₹${minRequiredAmount} is required to check-in.`);
+        }
       }
     }
 
@@ -192,10 +199,12 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Advance Payment</label>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                {isSinglePayment ? 'Full Payment' : 'Advance Payment'}
+              </label>
               {minRequiredAmount > 0 && (
                 <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Min Required: ₹{minRequiredAmount.toLocaleString()}
+                  {isSinglePayment ? `Required: ₹${minRequiredAmount.toLocaleString()}` : `Min Required: ₹${minRequiredAmount.toLocaleString()}`}
                 </span>
               )}
             </div>
@@ -212,7 +221,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
             <input type="number" value={payment.amount} onChange={e => {
               const val = e.target.value;
               setPayment({...payment, amount: val === '' ? '' : Number(val)});
-            }} placeholder="Advance amount..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+            }} placeholder={isSinglePayment ? "Full payment amount..." : "Advance amount..."} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
           </div>
         </div>
 

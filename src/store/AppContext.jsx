@@ -40,6 +40,7 @@ const initialState = {
     receiptEmail: 'accounts@yoyofun.in',
     receiptGstin: '30ABCDE1234F1Z5',
     receiptPan: 'ABCDE1234F',
+    singlePaymentMode: false,
   },
   emailScheduler: { enabled: false, email: 'manager@yoyofun.in', time: '06:00 AM' },
   folioCharges: [],
@@ -847,6 +848,7 @@ export function AppProvider({ children }) {
         receiptEmail: apiSettings.receiptEmail || 'accounts@yoyofun.in',
         receiptGstin: apiSettings.receiptGstin || '30ABCDE1234F1Z5',
         receiptPan: apiSettings.receiptPan || 'ABCDE1234F',
+        singlePaymentMode: apiSettings.singlePaymentMode === 'true',
       };
 
       const overridesByDate = {};
