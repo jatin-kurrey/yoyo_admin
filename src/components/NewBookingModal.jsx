@@ -95,6 +95,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
         checkOut: form.checkOut,
         balance: total - (payment.amount || 0),
         advancePaid: payment.amount || 0,
+        paymentMode: payment.mode,
         totalAmount: total,
         status: isFuture ? 'future' : 'checked-in',
       },

@@ -340,7 +340,23 @@ export function AppProvider({ children }) {
             check_out: `${data.checkOut}T00:00:00Z`,
             rate_per_night: data.rate || 4000,
           });
-          const b = res.data;
+          let b = res.data;
+          if (data.advancePaid > 0) {
+            try {
+              await pmsService.addPayment(b.id, {
+                booking_id: b.id,
+                amount: parseInt(data.advancePaid) || 0,
+                mode: data.paymentMode || 'Cash',
+                type: 'advance',
+              });
+              const updatedRes = await pmsService.getBooking(b.id);
+              if (updatedRes?.data) {
+                b = updatedRes.data;
+              }
+            } catch (err) {
+              console.error('Failed to register advance payment', err);
+            }
+          }
           const booking = {
             id: b.booking_ref,
             bookingRef: b.id,
@@ -361,6 +377,7 @@ export function AppProvider({ children }) {
           };
           rawDispatch({ type: 'ADD_BOOKING', payload: booking });
           showToast('Booking created');
+          refreshData();
           return;
         }
 
