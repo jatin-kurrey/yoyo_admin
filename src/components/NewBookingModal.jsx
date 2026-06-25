@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { X, User, Phone, Calendar } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
@@ -58,9 +58,16 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
   const tax = Math.round(form.rate * nights * taxRate / 100);
   const total = form.rate * nights + extraAdults * 500 + tax;
 
+  const isSinglePayment = defaultRules?.singlePaymentMode;
+
+  useEffect(() => {
+    if (isSinglePayment) {
+      setPayment(prev => ({ ...prev, amount: total }));
+    }
+  }, [total, isSinglePayment]);
+
   const minPct = defaultRules?.minAdvancePct || 0;
   const minAmt = defaultRules?.minAdvanceAmt || 0;
-  const isSinglePayment = defaultRules?.singlePaymentMode;
   const minRequiredAmount = isSinglePayment
     ? total
     : Math.max(minAmt, Math.round(total * minPct / 100));
