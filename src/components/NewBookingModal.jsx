@@ -5,12 +5,6 @@ import { useApp } from '../store/AppContext';
 export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
   const { dispatch, roomCategories, pricingRates, dates } = useApp();
 
-  const CATEGORY_MAP = {
-    'Water Park Cottage': 'WATER PARK COTTAGES',
-    'Premium Villa': 'PREMIUM VILLAS',
-    'Standard Room': 'STANDARD ROOMS',
-  };
-
   const normalize = (name) => {
     if (!name) return '';
     return name
@@ -21,14 +15,9 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
 
   const findCategoryForRoom = (num) => {
     for (const cat of roomCategories) {
-      if (cat.rooms.some(r => r.number === num)) {
-        const matchedKey = Object.keys(CATEGORY_MAP).find(
-          key => normalize(key) === normalize(cat.name)
-        );
-        if (matchedKey) return matchedKey;
-      }
+      if (cat.rooms.some(r => r.number === num)) return cat.name;
     }
-    return 'Super Deluxe';
+    return roomCategories[0]?.name || '';
   };
 
   const getRate = useCallback((category, plan) => {
@@ -38,7 +27,7 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     return pr[key] || pr.baseRate || pr.ep || 4000;
   }, [pricingRates]);
 
-  const defaultCategory = prefillRoom ? findCategoryForRoom(prefillRoom) : 'Super Deluxe';
+  const defaultCategory = prefillRoom ? findCategoryForRoom(prefillRoom) : (roomCategories[0]?.name || '');
 
   const [form, setForm] = useState({
     guestName: '', mobile: '', category: defaultCategory,
@@ -136,7 +125,12 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
             <div>
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Category</label>
               <select value={form.category} onChange={e => updateForm({category: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
-                <option>Water Park Cottage</option><option>Premium Villa</option><option>Standard Room</option>
+                {roomCategories.map(c => {
+                  const displayName = c.name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.substring(1)).join(' ');
+                  return (
+                    <option key={c.name} value={c.name}>{displayName}</option>
+                  );
+                })}
               </select>
             </div>
             <div>
