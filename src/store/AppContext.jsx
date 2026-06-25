@@ -369,6 +369,10 @@ export function AppProvider({ children }) {
 
         case 'ADD_TRANSACTION': {
           const txData = action.payload;
+          if (!api.getToken()) {
+            localDispatch();
+            return;
+          }
           const res = await pmsService.createTransaction({
             date: txData.date || new Date().toISOString().slice(0, 10),
             type: txData.type,
@@ -394,18 +398,22 @@ export function AppProvider({ children }) {
 
         case 'UPDATE_EMAIL_SCHEDULER': {
           const s = action.payload;
-          try { await pmsService.upsertSetting('email_scheduler', JSON.stringify(s)); } catch {}
+          if (api.getToken()) {
+            try { await pmsService.upsertSetting('email_scheduler', JSON.stringify(s)); } catch {}
+          }
           localDispatch();
           return;
         }
 
         case 'UPDATE_DEFAULT_RULES': {
           const rules = action.payload;
-          try {
-            await Promise.allSettled(Object.entries(rules).map(([k, v]) =>
-              pmsService.upsertSetting(k, String(v))
-            ));
-          } catch {}
+          if (api.getToken()) {
+            try {
+              await Promise.allSettled(Object.entries(rules).map(([k, v]) =>
+                pmsService.upsertSetting(k, String(v))
+              ));
+            } catch {}
+          }
           localDispatch();
           showToast('Settings saved');
           return;

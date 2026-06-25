@@ -28,6 +28,7 @@ export default function LoginPage() {
         const u = { name: demoEntry.name, email: demoEntry.email, role: demoEntry.role };
         setUser(u);
         localStorage.setItem('yoyo_admin_user', JSON.stringify(u));
+        localStorage.removeItem('yoyo_admin_token');
         showToast(`Logged in as ${demoEntry.name} (Local)`);
         setLoading(false);
       }, 800);
