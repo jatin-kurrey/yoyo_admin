@@ -14,6 +14,7 @@ const statusColors = {
 export default function CalendarGrid({ roomCategories, bookings, onCellClick }) {
   const { dispatch } = useApp();
   const [viewRange, setViewRange] = useState(7); // 7, 30, 90, 180 days
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [tooltip, setTooltip] = useState(null);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -183,149 +184,259 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
           </select>
         </div>
         
-        {/* Calendar Range Switcher */}
+        {/* View Mode Toggle */}
         <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-100">
-          {[
-            { label: '7 Days', value: 7 },
-            { label: '1 Month', value: 30 },
-            { label: '3 Months', value: 90 },
-            { label: '6 Months', value: 180 }
-          ].map(opt => (
-            <button key={opt.value} onClick={() => setViewRange(opt.value)}
-              className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
-                viewRange === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}>
-              {opt.label}
-            </button>
-          ))}
+          <button onClick={() => setViewMode('grid')}
+            className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+              viewMode === 'grid' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}>
+            Calendar Grid
+          </button>
+          <button onClick={() => setViewMode('list')}
+            className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+              viewMode === 'list' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}>
+            List View (All Bookings)
+          </button>
         </div>
+        
+        {/* Calendar Range Switcher */}
+        {viewMode === 'grid' && (
+          <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-100">
+            {[
+              { label: '7 Days', value: 7 },
+              { label: '1 Month', value: 30 },
+              { label: '3 Months', value: 90 },
+              { label: '6 Months', value: 180 }
+            ].map(opt => (
+              <button key={opt.value} onClick={() => setViewRange(opt.value)}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+                  viewRange === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="text-[10px] text-slate-400 font-medium ml-auto">
           {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''} shown
         </div>
       </div>
 
-      {/* Calendar Table */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full min-w-max border-collapse">
-          <thead>
-            <tr className="sticky top-0 z-10 bg-slate-50">
-              <th className="w-[200px] min-w-[200px] px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-r border-b border-slate-200 bg-slate-50">Rooms</th>
-              {generatedDayLabels.map((label, i) => (
-                <th key={label} className={`w-[100px] min-w-[100px] px-2 py-3 text-center border-r border-b border-slate-200 ${i === todayIdx ? 'bg-blue-50' : 'bg-slate-50'}`}>
-                  <div className="text-[11px] font-semibold text-slate-600">{label}</div>
-                  {i === todayIdx && <div className="text-[9px] text-blue-600 font-medium mt-0.5">Today</div>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {roomCategories.map((cat) => (
-              <Fragment key={cat.name}>
-                {/* Category Header Row */}
-                <tr key={`cat-${cat.name}`} className="bg-slate-100/80">
-                  <td className="px-4 py-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200" colSpan={generatedDates.length + 1}>
-                    {cat.name}
-                  </td>
-                </tr>
+      {/* Calendar Table or List View */}
+      {viewMode === 'grid' ? (
+        <div className="flex-1 overflow-auto">
+          <table className="w-full min-w-max border-collapse">
+            <thead>
+              <tr className="sticky top-0 z-10 bg-slate-50">
+                <th className="w-[200px] min-w-[200px] px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-r border-b border-slate-200 bg-slate-50">Rooms</th>
+                {generatedDayLabels.map((label, i) => (
+                  <th key={label} className={`w-[100px] min-w-[100px] px-2 py-3 text-center border-r border-b border-slate-200 ${i === todayIdx ? 'bg-blue-50' : 'bg-slate-50'}`}>
+                    <div className="text-[11px] font-semibold text-slate-600">{label}</div>
+                    {i === todayIdx && <div className="text-[9px] text-blue-600 font-medium mt-0.5">Today</div>}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {roomCategories.map((cat) => (
+                <Fragment key={cat.name}>
+                  {/* Category Header Row */}
+                  <tr key={`cat-${cat.name}`} className="bg-slate-100/80">
+                    <td className="px-4 py-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-r border-b border-slate-200" colSpan={generatedDates.length + 1}>
+                      {cat.name}
+                    </td>
+                  </tr>
 
-                {/* Room Rows */}
-                {cat.rooms.map((room) => {
-                  let skipUntil = -1;
-                  return (
-                    <tr key={room.number} className="border-b border-slate-100 hover:bg-slate-50/50">
-                      <td className="w-[200px] min-w-[200px] px-4 py-2.5 border-r border-slate-200 bg-white">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-slate-800 min-w-[36px]">{room.number}</span>
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold ${room.clean ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${room.clean ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                            {room.clean ? 'Clean' : 'Dirty'}
-                          </span>
-                          {room.status === 'blocked' && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-semibold">Blocked</span>}
-                          {room.status === 'ooo' && <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-semibold">OOO</span>}
-                        </div>
-                      </td>
+                  {/* Room Rows */}
+                  {cat.rooms.map((room) => {
+                    let skipUntil = -1;
+                    return (
+                      <tr key={room.number} className="border-b border-slate-100 hover:bg-slate-50/50">
+                        <td className="w-[200px] min-w-[200px] px-4 py-2.5 border-r border-slate-200 bg-white">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-800 min-w-[36px]">{room.number}</span>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold ${room.clean ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${room.clean ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              {room.clean ? 'Clean' : 'Dirty'}
+                            </span>
+                            {room.status === 'blocked' && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-semibold">Blocked</span>}
+                            {room.status === 'ooo' && <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-semibold">OOO</span>}
+                          </div>
+                        </td>
 
-                      {generatedDates.map((date, dateIdx) => {
-                        if (skipUntil > dateIdx) return null;
+                        {generatedDates.map((date, dateIdx) => {
+                          if (skipUntil > dateIdx) return null;
 
-                        const booking = getBookingForDay(room.number, date);
-                        if (booking) {
-                          const span = getBookingVisibleSpan(booking, dateIdx);
-                          skipUntil = dateIdx + span;
-                          const sc = statusColors[booking.status] || statusColors['future'];
+                          const booking = getBookingForDay(room.number, date);
+                          if (booking) {
+                            const span = getBookingVisibleSpan(booking, dateIdx);
+                            skipUntil = dateIdx + span;
+                            const sc = statusColors[booking.status] || statusColors['future'];
 
-                          return (
-                            <td key={date} colSpan={span} className="border-r border-slate-100 p-0.5 align-top">
-                              <div
-                                className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-all shadow-sm ${sc.bg} ${sc.hover} text-white text-[11px] leading-tight group relative`}
-                                onMouseEnter={() => setTooltip(booking.id)}
-                                onMouseLeave={() => setTooltip(null)}
-                              >
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="font-semibold truncate">{booking.guestName}</span>
-                                  <MoreHorizontal size={12} className="opacity-0 group-hover:opacity-100 shrink-0" />
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px] opacity-90 mt-0.5">
-                                  <span>{booking.pax}</span>
-                                  <Sparkles size={8} className="opacity-60" />
-                                  <span>{booking.plan}</span>
-                                  <span className="ml-auto opacity-75">{booking.source}</span>
-                                </div>
-
-                                {tooltip === booking.id && (
-                                  <div className="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded-lg border border-slate-200 py-2 w-52 text-slate-700 text-xs" style={{ minWidth: '200px' }}>
-                                    <div className="px-3 pb-2 border-b border-slate-100 mb-1">
-                                      <div className="font-semibold text-slate-800">{booking.guestName}</div>
-                                      <div className="text-slate-500 text-[10px]">Room {booking.roomNumber}</div>
-                                    </div>
-                                    <div className="px-3 space-y-1.5 py-1">
-                                      <div className="flex justify-between"><span className="text-slate-500">Status</span><span className={`font-semibold capitalize ${booking.status === 'checked-in' ? 'text-emerald-600' : booking.status === 'checked-out' ? 'text-slate-500' : 'text-blue-600'}`}>{booking.status?.replace('-', ' ')}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Source</span><span className="font-medium">{booking.source}</span></div>
-                                      <div className="flex justify-between"><span className="text-slate-500">Balance</span><span className={`font-semibold ${booking.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>₹{booking.balance}</span></div>
-                                      <div className="text-[10px] text-slate-400 mt-1">{booking.checkIn} → {booking.checkOut}</div>
-                                    </div>
-                                    <div className="px-3 pt-2 border-t border-slate-100 mt-1 flex gap-1 flex-wrap">
-                                      {booking.status !== 'checked-out' && (
-                                        <span onClick={(e) => { e.stopPropagation(); setSelectedFolioBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 cursor-pointer hover:bg-slate-200">Edit Folio</span>
-                                      )}
-                                      {(booking.status === 'future' || booking.status === 'hold') && (
-                                        <span onClick={(e) => { e.stopPropagation(); handleCheckinClick(booking); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200">Check-in</span>
-                                      )}
-                                      {booking.status === 'checked-in' && (
-                                        <span onClick={(e) => { e.stopPropagation(); handleCheckOut(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">Check-out</span>
-                                      )}
-                                      <span onClick={(e) => { e.stopPropagation(); setInvoiceBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 flex items-center gap-1">
-                                        <FileText size={10} /> Invoice
-                                      </span>
-                                      {booking.status !== 'checked-out' && (
-                                        <span onClick={(e) => { e.stopPropagation(); handleDelete(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 cursor-pointer hover:bg-red-100">Cancel</span>
-                                      )}
-                                    </div>
+                            return (
+                              <td key={date} colSpan={span} className="border-r border-slate-100 p-0.5 align-top">
+                                <div
+                                  className={`rounded-md px-2.5 py-1.5 cursor-pointer transition-all shadow-sm ${sc.bg} ${sc.hover} text-white text-[11px] leading-tight group relative`}
+                                  onMouseEnter={() => setTooltip(booking.id)}
+                                  onMouseLeave={() => setTooltip(null)}
+                                >
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="font-semibold truncate">{booking.guestName}</span>
+                                    <MoreHorizontal size={12} className="opacity-0 group-hover:opacity-100 shrink-0" />
                                   </div>
-                                )}
-                              </div>
-                            </td>
-                          );
-                        }
+                                  <div className="flex items-center gap-1.5 text-[10px] opacity-90 mt-0.5">
+                                    <span>{booking.pax}</span>
+                                    <Sparkles size={8} className="opacity-60" />
+                                    <span>{booking.plan}</span>
+                                    <span className="ml-auto opacity-75">{booking.source}</span>
+                                  </div>
 
-                        const isToday = dateIdx === todayIdx;
-                        const isBlocked = room.status === 'blocked' || room.status === 'ooo';
-                        return (
-                          <td key={date}
-                            onClick={() => !isBlocked && onCellClick?.(room.number, date)}
-                            className={`w-[100px] min-w-[100px] border-r border-slate-100 transition-colors ${isToday ? 'bg-blue-50/40' : 'bg-white'} ${!isBlocked ? 'cursor-pointer hover:bg-slate-100' : ''}`}
-                          />
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                                  {tooltip === booking.id && (
+                                    <div className="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded-lg border border-slate-200 py-2 w-52 text-slate-700 text-xs" style={{ minWidth: '200px' }}>
+                                      <div className="px-3 pb-2 border-b border-slate-100 mb-1">
+                                        <div className="font-semibold text-slate-800">{booking.guestName}</div>
+                                        <div className="text-slate-500 text-[10px]">Room {booking.roomNumber}</div>
+                                      </div>
+                                      <div className="px-3 space-y-1.5 py-1">
+                                        <div className="flex justify-between"><span className="text-slate-500">Status</span><span className={`font-semibold capitalize ${booking.status === 'checked-in' ? 'text-emerald-600' : booking.status === 'checked-out' ? 'text-slate-500' : 'text-blue-600'}`}>{booking.status?.replace('-', ' ')}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Source</span><span className="font-medium">{booking.source}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Balance</span><span className={`font-semibold ${booking.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>₹{booking.balance}</span></div>
+                                        <div className="text-[10px] text-slate-400 mt-1">{booking.checkIn} → {booking.checkOut}</div>
+                                      </div>
+                                      <div className="px-3 pt-2 border-t border-slate-100 mt-1 flex gap-1 flex-wrap">
+                                        {booking.status !== 'checked-out' && (
+                                          <span onClick={(e) => { e.stopPropagation(); setSelectedFolioBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 cursor-pointer hover:bg-slate-200">Edit Folio</span>
+                                        )}
+                                        {(booking.status === 'future' || booking.status === 'hold') && (
+                                          <span onClick={(e) => { e.stopPropagation(); handleCheckinClick(booking); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200">Check-in</span>
+                                        )}
+                                        {booking.status === 'checked-in' && (
+                                          <span onClick={(e) => { e.stopPropagation(); handleCheckOut(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">Check-out</span>
+                                        )}
+                                        <span onClick={(e) => { e.stopPropagation(); setInvoiceBooking(booking); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 cursor-pointer hover:bg-blue-100 flex items-center gap-1">
+                                          <FileText size={10} /> Invoice
+                                        </span>
+                                        {booking.status !== 'checked-out' && (
+                                          <span onClick={(e) => { e.stopPropagation(); handleDelete(booking.id); setTooltip(null); }} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 cursor-pointer hover:bg-red-100">Cancel</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          const isToday = dateIdx === todayIdx;
+                          const isBlocked = room.status === 'blocked' || room.status === 'ooo';
+                          return (
+                            <td key={date}
+                              onClick={() => !isBlocked && onCellClick?.(room.number, date)}
+                              className={`w-[100px] min-w-[100px] border-r border-slate-100 transition-colors ${isToday ? 'bg-blue-50/40' : 'bg-white'} ${!isBlocked ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                            />
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto p-4 bg-slate-50">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Guest Name</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Room</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Dates</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pax/Plan</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Source</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Total</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Paid</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Balance</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                      No bookings found. Try changing filters or search query.
+                    </td>
+                  </tr>
+                ) : (
+                  [...filteredBookings]
+                    .sort((a, b) => new Date(b.checkIn) - new Date(a.checkIn))
+                    .map((booking) => {
+                      const sc = statusColors[booking.status] || statusColors['future'];
+                      const isOutstanding = booking.balance > 0;
+                      return (
+                        <tr key={booking.id || booking.bookingRef} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 font-semibold text-slate-800">{booking.guestName}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-600">Room {booking.roomNumber}</td>
+                          <td className="px-4 py-3 text-slate-500">
+                            {booking.checkIn} to {booking.checkOut}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            <span className="font-medium">{booking.pax}</span> | <span className="font-semibold">{booking.plan}</span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 font-medium">{booking.source}</td>
+                          <td className="px-4 py-3 text-right font-medium text-slate-800">₹{booking.total || booking.totalAmount || 0}</td>
+                          <td className="px-4 py-3 text-right font-medium text-emerald-600">₹{booking.paid || 0}</td>
+                          <td className={`px-4 py-3 text-right font-bold ${isOutstanding ? 'text-red-600' : 'text-emerald-600'}`}>
+                            ₹{booking.balance || 0}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${sc.bg}`}>
+                              {sc.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
+                            {(booking.status === 'future' || booking.status === 'hold') && (
+                              <button onClick={() => handleCheckinClick(booking)}
+                                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-[10px] font-bold">
+                                Check In
+                              </button>
+                            )}
+                            {booking.status === 'checked-in' && (
+                              <button onClick={() => handleCheckOut(booking.id)}
+                                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-bold">
+                                Check Out
+                              </button>
+                            )}
+                            {booking.status === 'checked-out' && (
+                              <button onClick={() => setInvoiceBooking(booking)}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[10px] font-bold">
+                                Invoice
+                              </button>
+                            )}
+                            <button onClick={() => setSelectedFolioBooking(booking)}
+                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded text-[10px] font-bold">
+                              Folio
+                            </button>
+                            {booking.status !== 'checked-out' && (
+                              <button onClick={() => handleDelete(booking.id)}
+                                className="px-2 py-1 hover:bg-red-50 text-red-500 rounded">
+                                <X size={12} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {settlementBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSettlementBooking(null)}>
