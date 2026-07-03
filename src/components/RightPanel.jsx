@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { MoveRight, X } from 'lucide-react';
 
-export default function RightPanel() {
+export default function RightPanel({ onClose }) {
   const { todayStats, housekeepingStats, posTables, dispatch, occupancyRate, totalRooms, transactions, bookings } = useApp();
   const [moveModal, setMoveModal] = useState(null);
   const [roomInput, setRoomInput] = useState('');
@@ -28,7 +28,14 @@ export default function RightPanel() {
   return (
     <aside className="w-[280px] min-w-[280px] bg-white border-l border-slate-200 flex flex-col h-full overflow-hidden shrink-0">
       <div className="p-4 border-b border-slate-100">
-        <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Today's Overview</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Today's Overview</h3>
+          {onClose && (
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-0.5 rounded hover:bg-slate-100" title="Hide Panel">
+              <X size={14} />
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Arrivals', value: todayStats.arrivals, color: 'text-emerald-600' },

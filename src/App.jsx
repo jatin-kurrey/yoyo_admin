@@ -18,12 +18,14 @@ import LoginPage from './pages/LoginPage';
 import WaterparkCounterPage from './pages/WaterparkCounterPage';
 import WebsiteCMSPage from './pages/WebsiteCMSPage';
 import { sidebarModules } from './data/mockData';
+import { ChevronLeft } from 'lucide-react';
 
 function AppInner() {
   const { roomCategories, bookings, user, loading, authChecked, dates, dayLabels, usingMockData, enabledModules } = useApp();
   const [activeModule, setActiveModule] = useState('calendar');
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookingPrefill, setBookingPrefill] = useState(null);
+  const [showRightPanel, setShowRightPanel] = useState(true);
 
   // If user role changes or module disabled, redirect away from forbidden views
   useEffect(() => {
@@ -101,13 +103,22 @@ function AppInner() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800">
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800 relative">
       <Header onNewBooking={() => openNewBooking()} onNavigate={handleNavigate} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar modules={sidebarModules} activeModule={activeModule} onNavigate={handleNavigate} />
         {renderMain()}
-        {needsRightPanel && <RightPanel />}
+        {needsRightPanel && showRightPanel && <RightPanel onClose={() => setShowRightPanel(false)} />}
       </div>
+      {needsRightPanel && !showRightPanel && (
+        <button
+          onClick={() => setShowRightPanel(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-l-lg shadow-lg z-30 transition-all border border-slate-700 border-r-0 cursor-pointer flex items-center justify-center"
+          title="Show Today's Overview"
+        >
+          <ChevronLeft size={15} />
+        </button>
+      )}
       {showNewBooking && (
         <NewBookingModal
           onClose={() => { setShowNewBooking(false); setBookingPrefill(null); }}
