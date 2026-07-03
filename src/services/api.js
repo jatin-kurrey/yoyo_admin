@@ -75,6 +75,25 @@ export const api = {
     try { await request(ADMIN_BASE, 'POST', '/auth/logout'); } catch {}
     clearToken();
   },
+  upload: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${ADMIN_BASE}/uploads`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Upload failed');
+    }
+    return data;
+  },
   getMe: () => request(ADMIN_BASE, 'GET', '/auth/me'),
   getToken,
   setToken,

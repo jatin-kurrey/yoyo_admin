@@ -15,6 +15,8 @@ import AccountsPage from './pages/AccountsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import WaterparkCounterPage from './pages/WaterparkCounterPage';
+import WebsiteCMSPage from './pages/WebsiteCMSPage';
 import { sidebarModules } from './data/mockData';
 
 function AppInner() {
@@ -30,6 +32,10 @@ function AppInner() {
       setActiveModule('hk');
     } else if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(activeModule)) {
       setActiveModule('calendar');
+    } else if (role === 'restaurant_staff' && activeModule !== 'pos') {
+      setActiveModule('pos');
+    } else if (role === 'waterpark_staff' && activeModule !== 'waterpark') {
+      setActiveModule('waterpark');
     } else if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
       setActiveModule('calendar');
     } else if (enabledModules[activeModule] === false) {
@@ -63,7 +69,10 @@ function AppInner() {
     const role = user?.role;
     if (role === 'hk_staff' && module !== 'hk') return;
     if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(module)) return;
-    if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(module)) return;
+    if (role === 'restaurant_staff' && module !== 'pos') return;
+    if (role === 'waterpark_staff' && module !== 'waterpark') return;
+    if (module === 'website_cms' && !['admin', 'super_admin'].includes(role)) return;
+    if (role === 'staff' && ['pricing', 'accounts', 'settings', 'website_cms'].includes(module)) return;
     setActiveModule(module);
   };
 
@@ -77,6 +86,8 @@ function AppInner() {
       case 'accounts': return <AccountsPage />;
       case 'reports': return <ReportsPage />;
       case 'settings': return <SettingsPage />;
+      case 'waterpark': return <WaterparkCounterPage />;
+      case 'website_cms': return <WebsiteCMSPage />;
       case 'calendar':
       default:
         return (

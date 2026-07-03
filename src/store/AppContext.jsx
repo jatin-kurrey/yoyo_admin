@@ -7,7 +7,7 @@ import {
   posTables as fallbackPosTables, menuItems as fallbackMenuItems,
   pricingRates as fallbackPricing, transactions as fallbackTxns,
   vouchers as fallbackVouchers, userRoles as fallbackRoles,
-  dailyRevenue as fallbackDailyRev,
+  dailyRevenue as fallbackDailyRev, folioCharges as fallbackFolioCharges,
 } from '../data/mockData';
 
 const initialState = {
@@ -28,6 +28,8 @@ const initialState = {
     { id: 'demo_admin', name: 'Demo Admin', email: 'admin@yoyo.com', password: 'admin123', role: 'admin', isActive: true },
     { id: 'demo_booking', name: 'Booking Staff', email: 'priya@yoyo.com', password: 'admin123', role: 'booking_staff', isActive: true },
     { id: 'demo_hk', name: 'Housekeeping Staff', email: 'rajesh@yoyo.com', password: 'admin123', role: 'hk_staff', isActive: true },
+    { id: 'demo_restaurant', name: 'Restaurant Staff', email: 'vikram@yoyo.com', password: 'admin123', role: 'restaurant_staff', isActive: true },
+    { id: 'demo_waterpark', name: 'Waterpark Staff', email: 'waterpark@yoyo.com', password: 'admin123', role: 'waterpark_staff', isActive: true },
   ],
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
@@ -43,7 +45,7 @@ const initialState = {
     singlePaymentMode: false,
   },
   emailScheduler: { enabled: false, email: 'manager@yoyofun.in', time: '06:00 AM' },
-  folioCharges: [],
+  folioCharges: fallbackFolioCharges,
   bills: [],
   auditLog: [],
   enabledModules: {
@@ -123,32 +125,42 @@ function reducer(state, action) {
     case 'ASSIGN_STAFF_ROOMS':
       return { ...state, housekeepingStaff: state.housekeepingStaff.map(s => s.id === action.payload.staffId ? { ...s, assignedRooms: action.payload.rooms, status: 'busy' } : s) };
     case 'OCCUPY_TABLE':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, status: 'occupied', kotCount: 0, guestName: action.payload.guestName || 'Guest', orderValue: 0 } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, status: 'occupied', kotCount: 0, guestName: action.payload.guestName || 'Guest', guestPhone: action.payload.guestPhone || '', orderValue: 0, currentCart: [], orderItems: [] } : t) };
     case 'UPDATE_TABLE_CART':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, currentCart: action.payload.cart } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, orderItems: [...(t.orderItems || []), ...(action.payload.cart || [])], orderValue: (t.orderValue || 0) + (action.payload.cart || []).reduce((s, c) => s + c.price * c.qty, 0), currentCart: [] } : t) };
     case 'UPDATE_TABLE_ORDER':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + action.payload.kotDelta, orderValue: (t.orderValue || 0) + action.payload.valueDelta, status: 'occupied', currentCart: action.payload.currentCart || t.currentCart } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + (action.payload.kotDelta || 1), orderValue: (t.orderValue || 0) + action.payload.valueDelta, orderItems: [...(t.orderItems || []), ...(action.payload.items || [])], status: 'occupied', currentCart: [] } : t) };
     case 'BILL_TABLE': {
-      const table = state.posTables.find(t => t.id === action.payload);
+      const table = state.posTables.find(t => t.id === action.payload.id || t.id === action.payload);
+      const taxRate = state.defaultRules?.taxRate || 12;
+      const billPayload = action.payload.payment || {};
+      const subtotal = table?.orderValue || 0;
+      const taxAmt = Math.round(subtotal * taxRate / 100);
+      const grandTotal = subtotal + taxAmt;
       return {
         ...state,
-        posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'billed', kotCount: 0 } : t),
+        posTables: state.posTables.map(t => t.id === (action.payload.id || action.payload) ? { ...t, status: 'billed' } : t),
         bills: table ? [...state.bills, {
           id: `BILL${Date.now()}`,
           tableId: table.id,
           tableNumber: table.number,
           area: table.area,
           guestName: table.guestName,
-          items: table.currentCart || [],
-          total: table.orderValue,
-          tax: Math.round(table.orderValue * 0.05),
-          grandTotal: table.orderValue + Math.round(table.orderValue * 0.05),
+          items: [...(table.orderItems || [])],
+          total: subtotal,
+          tax: taxAmt,
+          taxRate,
+          grandTotal,
           date: new Date().toISOString(),
+          paymentMethod: billPayload.method || 'Cash',
+          paymentRef: billPayload.ref || '',
+          tendered: billPayload.tendered || grandTotal,
+          change: billPayload.tendered ? Math.max(0, billPayload.tendered - grandTotal) : 0,
         }] : state.bills,
       };
     }
     case 'VACATE_TABLE':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [] } : t) };
+      return { ...state, posTables: state.posTables.map(t => t.id === action.payload ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [], orderItems: [] } : t) };
     case 'MOVE_TO_ROOM': {
       const { tableId, roomNumber } = action.payload;
       const table = state.posTables.find(t => t.id === tableId);
@@ -161,7 +173,7 @@ function reducer(state, action) {
       } : null;
       return {
         ...state,
-        posTables: state.posTables.map(t => t.id === tableId ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [] } : t),
+        posTables: state.posTables.map(t => t.id === tableId ? { ...t, status: 'vacant', kotCount: 0, guestName: '', orderValue: 0, currentCart: [], orderItems: [] } : t),
         folioCharges: charge && booking ? [...state.folioCharges, { id: `FCH${Date.now()}`, bookingRef: booking.bookingRef || booking.id, ...charge }] : state.folioCharges,
         bookings: charge && booking ? state.bookings.map(b => (b.id === booking.id) ? { ...b, balance: (b.balance || 0) + table.orderValue } : b) : state.bookings,
       };
@@ -372,7 +384,9 @@ export function AppProvider({ children }) {
             status: b.status,
             rate: b.rate_per_night,
             total: b.total_amount,
+            totalAmount: b.total_amount,
             paid: b.paid_amount,
+            advancePaid: data.advancePaid || 0,
             tax: b.tax,
             discount: b.discount,
           };
@@ -491,14 +505,14 @@ export function AppProvider({ children }) {
         }
 
         case 'OCCUPY_TABLE': {
-          const { tableId, guestName } = action.payload;
-          if (isUUID(tableId)) await pmsService.occupyTable(tableId, guestName);
+          const { tableId, guestName, guestPhone } = action.payload;
+          if (isUUID(tableId)) await pmsService.occupyTable(tableId, guestName, guestPhone);
           localDispatch();
           return;
         }
 
         case 'BILL_TABLE': {
-          const id = action.payload;
+          const id = action.payload.id || action.payload;
           if (isUUID(id)) await pmsService.generateBill(id);
           localDispatch();
           return;
@@ -664,6 +678,15 @@ export function AppProvider({ children }) {
   }, [state, showToast, setUser]);
 
   const [usingMockData, setUsingMockData] = useState(false);
+  const [waterparkStats, setWaterparkStats] = useState({
+    total_bookings: 0,
+    total_revenue: 0,
+    online_bookings_count: 0,
+    counter_bookings_count: 0,
+    online_revenue: 0,
+    counter_revenue: 0,
+    recent_bookings: [],
+  });
 
   // Map roomId → room UUID from API
   const buildRoomMap = useCallback((rooms) => {
@@ -707,18 +730,46 @@ export function AppProvider({ children }) {
       })();
       const currentUser = user || cachedUser;
       const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin');
+      const isRestaurantOnly = currentUser?.role === 'restaurant_staff';
+      const isWaterparkOnly = currentUser?.role === 'waterpark_staff';
 
-      const [roomsRes, catsRes, bookingsRes, tablesRes, menuRes, txnsRes, settingsRes, overridesRes, usersRes] = await Promise.allSettled([
-        pmsService.getRooms(),
-        pmsService.getCategories(),
-        pmsService.getBookings({ limit: 100 }),
-        pmsService.getPOSTables(),
-        pmsService.getMenuItems(),
-        pmsService.getTransactions({}),
-        pmsService.getSettings(),
-        pmsService.getRateOverrides(),
-        isAdmin ? api.admin.get('/users?limit=100') : Promise.resolve({ success: true, data: { items: [] } }),
-      ]);
+      const tasks = isRestaurantOnly
+        ? [
+            Promise.resolve({ data: [] }), // roomsRes
+            Promise.resolve({ data: [] }), // catsRes
+            Promise.resolve({ data: { items: [] } }), // bookingsRes
+            pmsService.getPOSTables(),
+            pmsService.getMenuItems(),
+            pmsService.getTransactions({}),
+            pmsService.getSettings(),
+            Promise.resolve({ data: [] }), // overridesRes
+            Promise.resolve({ data: { items: [] } }), // usersRes
+          ]
+        : isWaterparkOnly
+        ? [
+            Promise.resolve({ data: [] }), // roomsRes
+            Promise.resolve({ data: [] }), // catsRes
+            Promise.resolve({ data: { items: [] } }), // bookingsRes
+            Promise.resolve({ data: [] }), // tablesRes
+            Promise.resolve({ data: [] }), // menuRes
+            Promise.resolve({ data: [] }), // txnsRes
+            Promise.resolve({ data: {} }), // settingsRes
+            Promise.resolve({ data: [] }), // overridesRes
+            Promise.resolve({ data: { items: [] } }), // usersRes
+          ]
+        : [
+            pmsService.getRooms(),
+            pmsService.getCategories(),
+            pmsService.getBookings({ limit: 100 }),
+            pmsService.getPOSTables(),
+            pmsService.getMenuItems(),
+            pmsService.getTransactions({}),
+            pmsService.getSettings(),
+            pmsService.getRateOverrides(),
+            isAdmin ? api.admin.get('/users?limit=100') : Promise.resolve({ success: true, data: { items: [] } }),
+          ];
+
+      const [roomsRes, catsRes, bookingsRes, tablesRes, menuRes, txnsRes, settingsRes, overridesRes, usersRes] = await Promise.allSettled(tasks);
 
       const apiRooms = roomsRes.status === 'fulfilled' ? roomsRes.value?.data || [] : [];
       const apiCats = catsRes.status === 'fulfilled' ? catsRes.value?.data || [] : [];
@@ -728,7 +779,7 @@ export function AppProvider({ children }) {
 
       buildRoomMap(apiRooms);
 
-      const gotRealData = apiRooms.length > 0 || apiCats.length > 0 || apiBookings.length > 0;
+      const gotRealData = isRestaurantOnly ? (apiTables.length > 0 || apiMenu.length > 0) : (apiRooms.length > 0 || apiCats.length > 0 || apiBookings.length > 0);
       setUsingMockData(!gotRealData);
 
       const categories = apiCats.length > 0
@@ -772,7 +823,10 @@ export function AppProvider({ children }) {
             status: t.status,
             kotCount: t.kot_count || 0,
             guestName: t.guest_name || '',
+            guestPhone: t.guest_phone || '',
             orderValue: t.current_order_value || 0,
+            currentCart: [],
+            orderItems: [],
           }))
         : fallbackPosTables;
 
@@ -791,7 +845,9 @@ export function AppProvider({ children }) {
             status: b.status,
             rate: b.rate_per_night,
             total: b.total_amount,
+            totalAmount: b.total_amount,
             paid: b.paid_amount,
+            advancePaid: 0,
             tax: b.tax,
             discount: b.discount,
           }))
@@ -803,7 +859,7 @@ export function AppProvider({ children }) {
             name: item.title,
             category: item.category,
             price: Math.round(item.price / 100),
-            veg: !item.category?.toLowerCase().includes('chicken') && !item.category?.toLowerCase().includes('non-veg'),
+            veg: item.is_veg !== undefined ? item.is_veg : true,
           }))
         : fallbackMenuItems;
 
@@ -861,11 +917,29 @@ export function AppProvider({ children }) {
       });
       const dateRateOverrides = Object.keys(overridesByDate).length > 0 ? overridesByDate : {};
 
+      if (isAdmin || isWaterparkOnly) {
+        try {
+          const statsRes = await pmsService.getAdminDashboardStats();
+          if (statsRes.success) {
+            setWaterparkStats(statsRes.data);
+          }
+        } catch (e) {
+          console.error("Failed to load waterpark dashboard stats:", e);
+        }
+      }
+
       rawDispatch({
         type: 'SET_INITIAL_DATA',
         payload: { roomCategories: categories, roomStatuses: statuses, pricingRates, bookings, posTables, menuItems, transactions, housekeepingStaff, defaultRules, dateRateOverrides },
       });
-    } catch { setUsingMockData(true); }
+    } catch {
+      setUsingMockData(true);
+    }
+    // If a 401 response cleared the token, log out
+    if (!api.getToken() && user) {
+      setUser(null);
+      localStorage.removeItem('yoyo_admin_user');
+    }
     setLoading(false);
   }, [user, buildRoomMap]);
 
@@ -927,7 +1001,7 @@ export function AppProvider({ children }) {
   const totalExpenses = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const todayIncome = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
   const todayCollected = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + t.amount, 0);
-  const todayDiscounts = state.transactions.filter(t => t.date === todayStr && t.type === 'income' && t.status === 'completed').reduce((s, t) => s + Math.round(t.amount * 0.03), 0);
+  const todayDiscounts = 0;
   const adr = occupiedCount > 0 ? Math.round(totalRevenue / occupiedCount) : 0;
   const revpar = Math.round(adr * (occupancyRate / 100));
   const dates = Array.from({ length: 7 }, (_, i) => {
@@ -1005,7 +1079,7 @@ export function AppProvider({ children }) {
   const vouchers = txVouchers.length > 0 ? txVouchers : state.vouchers;
 
   const value = {
-    state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast, refreshData, usingMockData,
+    state, dispatch, rawDispatch, user, setUser, loading, authChecked, toasts, showToast, removeToast, refreshData, usingMockData, waterparkStats, setWaterparkStats,
     bookings: state.bookings, activeBookings, checkedInBookings,
     roomCategories: state.roomCategories, roomStatuses: state.roomStatuses,
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,

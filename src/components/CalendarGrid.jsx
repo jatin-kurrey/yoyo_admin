@@ -95,9 +95,9 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
     setInvoiceBooking({
       ...checkoutConfirm,
       status: 'checked-out',
-      advancePaid: checkoutConfirm.advancePaid || 0,
+      advancePaid: checkoutConfirm.advancePaid || checkoutConfirm.paid || 0,
       checkoutPaid: 0,
-      totalPaid: checkoutConfirm.advancePaid || 0,
+      totalPaid: checkoutConfirm.paid || 0,
       balance: 0,
     });
     setCheckoutConfirm(null);
@@ -137,14 +137,15 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
     await dispatch({ type: 'CHECK_OUT', payload: settlementBooking.id });
 
     // Show invoice after settlement checkout
-    const totalPaid = (settlementBooking.advancePaid || 0) + amount;
+    const totalPaid = (settlementBooking.paid || 0) + amount;
     setInvoiceBooking({
       ...settlementBooking,
       status: 'checked-out',
-      advancePaid: settlementBooking.advancePaid || 0,
+      advancePaid: settlementBooking.paid || 0,
       checkoutPaid: amount,
+      paid: totalPaid,
       totalPaid,
-      balance: Math.max(0, (settlementBooking.totalAmount || settlementBooking.balance || 0) - totalPaid),
+      balance: Math.max(0, (settlementBooking.totalAmount || settlementBooking.total || settlementBooking.balance || 0) - totalPaid),
     });
     setSettlementBooking(null);
   };
@@ -427,7 +428,7 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
               </div>
               <div className="bg-slate-50 rounded-lg p-3 flex items-center justify-between border border-slate-200 mt-2">
                 <span className="text-xs text-slate-600 font-medium">Total Stay Amount</span>
-                <span className="text-sm font-bold text-slate-800">₹{checkinReceipt.totalAmount || checkinReceipt.balance || 0}</span>
+                <span className="text-sm font-bold text-slate-800">₹{(checkinReceipt.totalAmount || checkinReceipt.total || (checkinReceipt.rate * (() => { try { return Math.max(1, Math.round((new Date(checkinReceipt.checkOut) - new Date(checkinReceipt.checkIn)) / (1000 * 60 * 60 * 24))); } catch { return 1; } })()) || checkinReceipt.balance || 0)}</span>
               </div>
               <div className="text-[10px] text-slate-400 italic text-center pt-3 border-t border-slate-100">
                 Please keep this receipt for your records.
@@ -435,7 +436,7 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
               <button onClick={() => {
-                const ap = checkinReceipt.advancePaid || 0;
+                const ap = checkinReceipt.advancePaid || checkinReceipt.paid || 0;
                 setInvoiceBooking({ ...checkinReceipt, advancePaid: ap, checkoutPaid: 0, totalPaid: ap, paid: ap });
                 setCheckinReceipt(null);
               }}

@@ -10,7 +10,8 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
     return name
       .toUpperCase()
       .replace(/ROOMS|ROOM|SUITES|SUITE/g, '')
-      .replace(/[^A-Z0-9]/g, '');
+      .replace(/[^A-Z0-9]/g, '')
+      .replace(/S$/, '');
   };
 
   const findCategoryForRoom = (num) => {

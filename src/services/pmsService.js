@@ -24,7 +24,7 @@ export const pmsService = {
   getRooms: () => api.pms.get('/rooms'),
 
   getPOSTables: () => api.pms.get('/pos/tables'),
-  occupyTable: (id, guestName) => api.pms.post(`/pos/tables/${id}/occupy`, { guest_name: guestName }),
+  occupyTable: (id, guestName, guestPhone) => api.pms.post(`/pos/tables/${id}/occupy`, { guest_name: guestName, guest_phone: guestPhone }),
   addKOT: (tableId, data) => api.pms.post(`/pos/tables/${tableId}/kot`, data),
   generateBill: (id) => api.pms.post(`/pos/tables/${id}/bill`),
   vacateTable: (id) => api.pms.post(`/pos/tables/${id}/vacate`),
@@ -64,4 +64,34 @@ export const pmsService = {
   backupSystem: () => api.pms.get('/system/backup'),
   restoreSystem: (data) => api.pms.post('/system/restore', data),
   resetSystem: () => api.pms.post('/system/reset'),
+
+  // Waterpark Counter Bookings & Stats
+  createCounterBooking: (data) => api.admin.post('/bookings', data),
+  getAdminTickets: () => api.admin.get('/tickets'),
+  getAdminBookings: () => api.admin.get('/bookings'),
+  getAdminDashboardStats: () => api.admin.get('/dashboard/stats'),
+
+  // CMS endpoints
+  getHeroSlides: () => api.admin.get('/hero-slides'),
+  createHeroSlide: (data) => api.admin.post('/hero-slides', data),
+  updateHeroSlide: (id, data) => api.admin.patch(`/hero-slides/${id}`, data),
+  deleteHeroSlide: (id) => api.admin.delete(`/hero-slides/${id}`),
+
+  getAttractions: () => api.admin.get('/attractions'),
+  createAttraction: (data) => api.admin.post('/attractions', data),
+  updateAttraction: (id, data) => api.admin.patch(`/attractions/${id}`, data),
+  deleteAttraction: (id) => api.admin.delete(`/attractions/${id}`),
+
+  createTicket: (data) => api.admin.post('/tickets', data),
+  updateTicket: (id, data) => api.admin.patch(`/tickets/${id}`, data),
+  deleteTicket: (id) => api.admin.delete(`/tickets/${id}`),
+  toggleTicketStatus: (id) => api.admin.patch(`/tickets/${id}/toggle-status`),
+
+  getGallery: () => api.admin.get('/gallery'),
+  createGalleryItem: (data) => api.admin.post('/gallery', data),
+  updateGalleryItem: (id, data) => api.admin.patch(`/gallery/${id}`, data),
+  deleteGalleryItem: (id) => api.admin.delete(`/gallery/${id}`),
+
+  getContentPages: () => api.admin.get('/content'),
+  updateContentPage: (slug, data) => api.admin.patch(`/content/${slug}`, data),
 };

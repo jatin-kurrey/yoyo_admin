@@ -2,7 +2,7 @@ import { TrendingUp, TrendingDown, DollarSign, Hotel, Percent, BarChart3, Wallet
 import { useApp } from '../store/AppContext';
 
 export default function DashboardPage() {
-  const { dashboardKPI, dailyRevenue, revenueBreakdown, todayStats, occupancyRate, adr, revpar, totalRevenue, totalExpenses } = useApp();
+  const { dashboardKPI, dailyRevenue, revenueBreakdown, todayStats, occupancyRate, adr, revpar, totalRevenue, totalExpenses, waterparkStats } = useApp();
 
   const maxRevenue = Math.max(...dailyRevenue.map(d => d.revenue), 1);
 
@@ -119,6 +119,65 @@ export default function DashboardPage() {
               <span className="text-xs font-medium text-slate-600">{item.label}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Waterpark Ticket Sales Overview */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Waterpark Ticket Sales</h3>
+            <p className="text-[10px] text-slate-400">Comparison of Online vs Counter bookings</p>
+          </div>
+          <div className="flex gap-4 text-[10px] font-medium text-slate-500">
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Counter Booking</div>
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Online Website</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4">
+          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tickets Sold</div>
+            <div className="text-xl font-black text-slate-800">{waterparkStats?.total_bookings || 0}</div>
+            <div className="flex gap-3 text-[10px] text-slate-500 mt-2">
+              <span>Counter: <b>{waterparkStats?.counter_bookings_count || 0}</b></span>
+              <span>Online: <b>{waterparkStats?.online_bookings_count || 0}</b></span>
+            </div>
+          </div>
+          
+          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Sales Revenue</div>
+            <div className="text-xl font-black text-emerald-600">₹{(waterparkStats?.total_revenue || 0) / 100}</div>
+            <div className="flex gap-3 text-[10px] text-slate-500 mt-2">
+              <span>Counter: <b>₹{(waterparkStats?.counter_revenue || 0) / 100}</b></span>
+              <span>Online: <b>₹{(waterparkStats?.online_revenue || 0) / 100}</b></span>
+            </div>
+          </div>
+
+          <div className="col-span-2 border border-slate-100 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex-1 pr-4">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sales Revenue Split</div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden flex">
+                {waterparkStats?.total_revenue > 0 ? (
+                  <>
+                    <div className="bg-emerald-500 h-full" style={{ width: `${((waterparkStats?.counter_revenue || 0) / waterparkStats?.total_revenue) * 100}%` }} title="Counter Sales" />
+                    <div className="bg-blue-500 h-full" style={{ width: `${((waterparkStats?.online_revenue || 0) / waterparkStats?.total_revenue) * 100}%` }} title="Online Sales" />
+                  </>
+                ) : (
+                  <div className="bg-slate-300 w-full h-full" />
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] font-bold text-slate-400 block uppercase">Channel Split</span>
+              <span className="text-xs font-bold text-slate-700">
+                {waterparkStats?.total_revenue > 0 
+                  ? `${Math.round((waterparkStats.counter_revenue / waterparkStats.total_revenue) * 100)}% Counter / ${Math.round((waterparkStats.online_revenue / waterparkStats.total_revenue) * 100)}% Online`
+                  : 'No sales data'
+                }
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

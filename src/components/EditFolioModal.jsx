@@ -39,7 +39,19 @@ export default function EditFolioModal({ booking, onClose }) {
     } catch (err) {
       // In mock mode, use local folio charges
       const localCharges = folioCharges.filter(f => f.bookingRef === booking.id || f.bookingRef === booking.bookingRef);
-      setEntries(localCharges.map(c => ({ ...c, amount: c.amount })));
+      if (localCharges.length > 0) {
+        setEntries(localCharges.map(c => ({ ...c, amount: c.amount })));
+      } else {
+        // Default room charge fallback
+        const nights = Math.max(1, Math.round((new Date(booking.checkOut) - new Date(booking.checkIn)) / (1000 * 60 * 60 * 24)));
+        setEntries([{
+          id: 'default_rent',
+          description: `Room Rent (${nights} night${nights > 1 ? 's' : ''})`,
+          type: 'room_charge',
+          amount: (booking.rate || 4500) * nights,
+          quantity: 1,
+        }]);
+      }
       setPayments([]);
     } finally {
       setLoading(false);

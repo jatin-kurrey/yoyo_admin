@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { api } from '../services/api';
-import { Lock, Mail, Eye, EyeOff, Loader2, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Loader2, ShieldAlert, WifiOff } from 'lucide-react';
 
 export default function LoginPage() {
-  const { setUser, showToast, demoUsers } = useApp();
+  const { setUser, showToast, demoUsers, refreshData } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showBackendFailed, setShowBackendFailed] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export default function LoginPage() {
     try {
       const res = await api.login(email, password);
       if (res.success) {
-        showToast('Login successful! Welcome back.');
+        setShowBackendFailed(false);
         const me = await api.getMe();
         if (me.success) {
           setUser(me.data);
@@ -36,11 +37,14 @@ export default function LoginPage() {
           setUser(fallback);
           localStorage.setItem('yoyo_admin_user', JSON.stringify(fallback));
         }
+        showToast('Login successful! Loading live data...');
+        refreshData();
       } else {
         setError(res.message || 'Invalid email or password.');
       }
     } catch (err) {
-      setError(err.message || 'Connection error. Please try again.');
+      setError(err.message || 'Backend not reachable. Continue in Demo Mode below.');
+      setShowBackendFailed(true);
     } finally {
       setLoading(false);
     }
@@ -50,6 +54,14 @@ export default function LoginPage() {
     setEmail(demoEmail);
     setPassword(demoPass);
     setError('');
+    setShowBackendFailed(false);
+  };
+
+  const handleDemoMode = (demoEmail, demoPass, role) => {
+    const user = { name: demoEmail.split('@')[0], email: demoEmail, role };
+    setUser(user);
+    localStorage.setItem('yoyo_admin_user', JSON.stringify(user));
+    showToast('Demo mode — exploring with sample data');
   };
 
   return (
@@ -68,8 +80,16 @@ export default function LoginPage() {
         <p className="text-slate-400 text-xs mt-1.5 mb-6">Property Management & Admin Console</p>
 
         {error && (
-          <div className="w-full p-3 mb-5 text-xs bg-red-500/15 border border-red-500/30 rounded-lg text-red-200">
-            {error}
+          <div className="w-full mb-5">
+            <div className="p-3 text-xs bg-red-500/15 border border-red-500/30 rounded-lg text-red-200">
+              {error}
+            </div>
+            {showBackendFailed && (
+              <button type="button" onClick={() => handleDemoMode('admin@yoyo.com', 'admin123', 'admin')}
+                className="w-full mt-2 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <WifiOff size={14} /> Continue in Demo Mode
+              </button>
+            )}
           </div>
         )}
 
@@ -142,16 +162,18 @@ export default function LoginPage() {
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {demoUsers.filter(u => u.isActive).map((du) => {
-              const roleColors = { super_admin: 'text-emerald-400', admin: 'text-emerald-400', staff: 'text-blue-400', hk_staff: 'text-purple-400', booking_staff: 'text-cyan-400' };
-              const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', staff: 'Staff', hk_staff: 'Housekeeping', booking_staff: 'Booking Staff' };
+              const roleColors = { super_admin: 'text-emerald-400', admin: 'text-emerald-400', staff: 'text-blue-400', hk_staff: 'text-purple-400', booking_staff: 'text-cyan-400', restaurant_staff: 'text-orange-400' };
+              const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', staff: 'Staff', hk_staff: 'Housekeeping', booking_staff: 'Booking Staff', restaurant_staff: 'Restaurant Staff' };
               return (
                 <button key={du.id} type="button"
                   onClick={() => handleFillDemo(du.email, du.password)}
-                  className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group"
+                  onDoubleClick={() => handleDemoMode(du.email, du.password, du.role)}
+                  className="text-left p-2.5 bg-slate-900/40 border border-slate-700/40 hover:border-emerald-500/40 hover:bg-slate-900/70 rounded-xl transition-all group relative"
                 >
                   <div className={`text-[10px] font-semibold ${roleColors[du.role] || 'text-slate-400'} group-hover:opacity-80`}>{roleLabels[du.role] || du.role}</div>
                   <div className="text-[9px] text-slate-500 mt-0.5 truncate">{du.email}</div>
                   <div className="text-[8px] text-slate-600 font-mono mt-0.5">pass: {du.password}</div>
+                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-[7px] text-emerald-500/60 font-semibold transition-opacity">Double-click to enter</div>
                 </button>
               );
             })}
