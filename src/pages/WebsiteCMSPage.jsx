@@ -84,7 +84,7 @@ export default function WebsiteCMSPage() {
         title: item.title,
         slug: item.slug,
         description: item.description,
-        price: item.price / 100, // paisa to rupees
+        price: item.price, // use price directly in Rupees
         category: item.category,
         features: item.features ? JSON.parse(JSON.stringify(item.features)) : [],
         stock: item.stock,
@@ -161,7 +161,7 @@ export default function WebsiteCMSPage() {
       if (activeTab === 'tickets') {
         const payload = {
           ...ticketForm,
-          price: Math.round(parseFloat(ticketForm.price) * 100), // rupees to paisa
+          price: parseFloat(ticketForm.price), // save directly in Rupees
           features: ticketForm.features,
         };
         if (modalType === 'create') {
@@ -270,7 +270,7 @@ export default function WebsiteCMSPage() {
                         <div className="text-[10px] text-slate-400 mt-0.5 max-w-sm truncate">{t.description}</div>
                       </td>
                       <td className="p-4"><span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">{t.category}</span></td>
-                      <td className="p-4 font-bold text-slate-800">₹{t.price / 100}</td>
+                      <td className="p-4 font-bold text-slate-800">₹{t.price}</td>
                       <td className="p-4 text-slate-500 font-semibold">{t.stock}</td>
                       <td className="p-4">
                         {t.is_bestseller ? <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">Bestseller</span> : <span className="text-slate-300">-</span>}
