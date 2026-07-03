@@ -94,4 +94,15 @@ export const pmsService = {
 
   getContentPages: () => api.admin.get('/content'),
   updateContentPage: (slug, data) => api.admin.patch(`/content/${slug}`, data),
+
+  // POS Tables Management
+  createPOSTable: (data) => api.pms.post('/pos/tables', data),
+  updatePOSTable: (id, data) => api.pms.patch(`/pos/tables/${id}`, data),
+  deletePOSTable: (id) => api.pms.delete(`/pos/tables/${id}`),
+
+  // Restaurant Menu Items Management
+  getAdminMenuItems: () => api.admin.get('/restaurant/items'),
+  createMenuItem: (data) => api.admin.post('/restaurant/items', data),
+  updateMenuItem: (id, data) => api.admin.patch(`/restaurant/items/${id}`, data),
+  deleteMenuItem: (id) => api.admin.delete(`/restaurant/items/${id}`),
 };

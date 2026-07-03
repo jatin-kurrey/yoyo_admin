@@ -45,6 +45,141 @@ export default function SettingsPage() {
     }
   }, [defaultRules]);
 
+  // POS Tables Management States
+  const [posTables, setPosTables] = useState([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  const [showAddTable, setShowAddTable] = useState(false);
+  const [editingTable, setEditingTable] = useState(null);
+  const [tableForm, setTableForm] = useState({ tableNumber: '', area: 'Waterfront Dining', capacity: 4 });
+
+  // Restaurant Menu Items Management States
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [editingMenu, setEditingMenu] = useState(null);
+  const [menuForm, setMenuForm] = useState({ title: '', description: '', category: 'Starters', price: '', isVeg: true, isActive: true, sortOrder: 0, imageUrl: '' });
+
+  const loadPOSTables = useCallback(async () => {
+    setTablesLoading(true);
+    try {
+      const res = await pmsService.getPOSTables();
+      if (res.success) setPosTables(res.data || []);
+    } catch {}
+    setTablesLoading(false);
+  }, []);
+
+  const loadMenuItems = useCallback(async () => {
+    setMenuLoading(true);
+    try {
+      const res = await pmsService.getAdminMenuItems();
+      if (res.success) setMenuItems(res.data || []);
+    } catch {}
+    setMenuLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (api.getToken()) {
+      loadPOSTables();
+      loadMenuItems();
+    }
+  }, [loadPOSTables, loadMenuItems]);
+
+  const handleSaveTable = async () => {
+    if (!tableForm.tableNumber || !tableForm.capacity) {
+      return showToast('Table number and capacity are required', 'error');
+    }
+    const payload = {
+      table_number: parseInt(tableForm.tableNumber),
+      area: tableForm.area,
+      capacity: parseInt(tableForm.capacity),
+    };
+    try {
+      let res;
+      if (editingTable) {
+        res = await pmsService.updatePOSTable(editingTable.id, payload);
+      } else {
+        res = await pmsService.createPOSTable(payload);
+      }
+      if (res.success) {
+        showToast(editingTable ? 'Table updated successfully' : 'Table created successfully');
+        setShowAddTable(false);
+        setEditingTable(null);
+        setTableForm({ tableNumber: '', area: 'Waterfront Dining', capacity: 4 });
+        loadPOSTables();
+      } else {
+        showToast(res.message || 'Failed to save table', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error saving table', 'error');
+    }
+  };
+
+  const handleDeleteTable = async (id) => {
+    if (!confirm('Are you sure you want to delete this table?')) return;
+    try {
+      const res = await pmsService.deletePOSTable(id);
+      if (res.success) {
+        showToast('Table deleted successfully');
+        loadPOSTables();
+      } else {
+        showToast(res.message || 'Failed to delete table', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error deleting table', 'error');
+    }
+  };
+
+  const handleSaveMenuItem = async () => {
+    if (!menuForm.title || !menuForm.price) {
+      return showToast('Title and price are required', 'error');
+    }
+    const payload = {
+      title: menuForm.title,
+      description: menuForm.description,
+      image_url: menuForm.imageUrl || '',
+      category: menuForm.category,
+      icon_name: 'Utensils',
+      price: Math.round(parseFloat(menuForm.price) * 100), // convert to Paise
+      is_veg: menuForm.isVeg,
+      is_active: menuForm.isActive,
+      sort_order: parseInt(menuForm.sortOrder || 0),
+    };
+    try {
+      let res;
+      if (editingMenu) {
+        res = await pmsService.updateMenuItem(editingMenu.id, payload);
+      } else {
+        res = await pmsService.createMenuItem(payload);
+      }
+      if (res.success) {
+        showToast(editingMenu ? 'Menu item updated' : 'Menu item created');
+        setShowAddMenu(false);
+        setEditingMenu(null);
+        setMenuForm({ title: '', description: '', category: 'Starters', price: '', isVeg: true, isActive: true, sortOrder: 0, imageUrl: '' });
+        loadMenuItems();
+      } else {
+        showToast(res.message || 'Failed to save menu item', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error saving menu item', 'error');
+    }
+  };
+
+  const handleDeleteMenuItem = async (id) => {
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
+    try {
+      const res = await pmsService.deleteMenuItem(id);
+      if (res.success) {
+        showToast('Menu item deleted');
+        loadMenuItems();
+      } else {
+        showToast(res.message || 'Failed to delete menu item', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error deleting menu item', 'error');
+    }
+  };
+
   // System admin state
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
   const [systemStats, setSystemStats] = useState(null);
@@ -743,6 +878,153 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* POS Tables Management */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <Server size={14} /> Restaurant POS Tables ({posTables.length})
+          </h3>
+          <button
+            onClick={() => {
+              setEditingTable(null);
+              setTableForm({ tableNumber: '', area: 'Waterfront Dining', capacity: 4 });
+              setShowAddTable(true);
+            }}
+            className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+          >
+            + Add Table
+          </button>
+        </div>
+        <div className="p-4">
+          {tablesLoading ? (
+            <div className="text-center py-6 text-xs text-slate-400">Loading tables...</div>
+          ) : posTables.length === 0 ? (
+            <div className="text-center py-6 text-xs text-slate-400">No POS tables configured.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {posTables.map((table) => (
+                <div key={table.id} className="border border-slate-100 rounded-lg p-3 flex items-center justify-between bg-slate-50">
+                  <div>
+                    <div className="text-sm font-bold text-slate-800">Table {table.number}</div>
+                    <div className="text-[10px] text-slate-500">{table.area} · {table.capacity} seats</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingTable(table);
+                        setTableForm({ tableNumber: table.number, area: table.area, capacity: table.capacity });
+                        setShowAddTable(true);
+                      }}
+                      className="p-1 text-slate-400 hover:text-blue-600 rounded"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTable(table.id)}
+                      className="p-1 text-slate-400 hover:text-red-500 rounded"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Restaurant Menu Items Management */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <Database size={14} /> Restaurant Food Menu Items ({menuItems.length})
+          </h3>
+          <button
+            onClick={() => {
+              setEditingMenu(null);
+              setMenuForm({ title: '', description: '', category: 'Starters', price: '', isVeg: true, isActive: true, sortOrder: 0, imageUrl: '' });
+              setShowAddMenu(true);
+            }}
+            className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
+          >
+            + Add Menu Item
+          </button>
+        </div>
+        <div className="p-4">
+          {menuLoading ? (
+            <div className="text-center py-6 text-xs text-slate-400">Loading menu...</div>
+          ) : menuItems.length === 0 ? (
+            <div className="text-center py-6 text-xs text-slate-400">No menu items found.</div>
+          ) : (
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 font-semibold">
+                    <th className="py-2 px-3">Item Name</th>
+                    <th className="py-2 px-3">Category</th>
+                    <th className="py-2 px-3 text-right">Price</th>
+                    <th className="py-2 px-3 text-center">Veg/Non-Veg</th>
+                    <th className="py-2 px-3 text-center">Status</th>
+                    <th className="py-2 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {menuItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="py-2 px-3 font-semibold text-slate-700">
+                        <div>{item.title}</div>
+                        {item.description && <div className="text-[10px] text-slate-400 font-normal">{item.description}</div>}
+                      </td>
+                      <td className="py-2 px-3 text-slate-500">{item.category}</td>
+                      <td className="py-2 px-3 text-right font-bold text-slate-800">₹{(item.price / 100).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${item.is_veg ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                          {item.is_veg ? 'Veg' : 'Non-Veg'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${item.is_active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {item.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingMenu(item);
+                              setMenuForm({
+                                title: item.title,
+                                description: item.description || '',
+                                category: item.category || 'Starters',
+                                price: (item.price / 100).toString(),
+                                isVeg: item.is_veg,
+                                isActive: item.is_active,
+                                sortOrder: item.sort_order || 0,
+                                imageUrl: item.image_url || '',
+                              });
+                              setShowAddMenu(true);
+                            }}
+                            className="p-1 text-slate-400 hover:text-blue-600 rounded"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMenuItem(item.id)}
+                            className="p-1 text-slate-400 hover:text-red-500 rounded"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Add Category Modal */}
       {showAddCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowAddCategory(false)}>
@@ -902,6 +1184,107 @@ export default function SettingsPage() {
                 {busy ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                 Reset Everything
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add/Edit POS Table Modal */}
+      {showAddTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => { setShowAddTable(false); setEditingTable(null); }}>
+          <div className="bg-white rounded-xl shadow-xl w-[380px] p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-slate-800 mb-4">{editingTable ? 'Edit POS Table' : 'Add POS Table'}</h3>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Table Number</label>
+                <input type="number" value={tableForm.tableNumber} onChange={e => setTableForm({...tableForm, tableNumber: e.target.value})}
+                  placeholder="e.g., 1" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" autoFocus />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Area / Section</label>
+                <select value={tableForm.area} onChange={e => setTableForm({...tableForm, area: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
+                  <option value="Waterfront Dining">Waterfront Dining</option>
+                  <option value="Rooftop Lounge">Rooftop Lounge</option>
+                  <option value="Poolside Cafe">Poolside Cafe</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Seating Capacity</label>
+                <input type="number" value={tableForm.capacity} onChange={e => setTableForm({...tableForm, capacity: e.target.value})}
+                  placeholder="e.g., 4" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setShowAddTable(false); setEditingTable(null); }} className="px-4 py-1.5 text-xs font-semibold text-slate-600">Cancel</button>
+              <button onClick={handleSaveTable} className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">Save Table</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Menu Item Modal */}
+      {showAddMenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => { setShowAddMenu(false); setEditingMenu(null); }}>
+          <div className="bg-white rounded-xl shadow-xl w-[440px] p-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-slate-800 mb-4">{editingMenu ? 'Edit Menu Item' : 'Add Menu Item'}</h3>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Item Title</label>
+                <input type="text" value={menuForm.title} onChange={e => setMenuForm({...menuForm, title: e.target.value})}
+                  placeholder="e.g., Paneer Tikka" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" autoFocus />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Description</label>
+                <textarea value={menuForm.description} onChange={e => setMenuForm({...menuForm, description: e.target.value})}
+                  placeholder="e.g., Cottage cheese cubes marinated in spices and grilled" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" rows={2} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Category</label>
+                  <select value={menuForm.category} onChange={e => setMenuForm({...menuForm, category: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white">
+                    <option value="Starters">Starters</option>
+                    <option value="Soups">Soups</option>
+                    <option value="Main Course">Main Course</option>
+                    <option value="Biryani">Biryani</option>
+                    <option value="Breads">Breads</option>
+                    <option value="South Indian">South Indian</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Desserts">Desserts</option>
+                    <option value="Thali">Thali</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Price (₹)</label>
+                  <input type="number" step="0.01" value={menuForm.price} onChange={e => setMenuForm({...menuForm, price: e.target.value})}
+                    placeholder="e.g., 350.00" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Sort Order</label>
+                  <input type="number" value={menuForm.sortOrder} onChange={e => setMenuForm({...menuForm, sortOrder: e.target.value})}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Image URL (Optional)</label>
+                  <input type="text" value={menuForm.imageUrl} onChange={e => setMenuForm({...menuForm, imageUrl: e.target.value})}
+                    placeholder="https://..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg" />
+                </div>
+              </div>
+              <div className="flex gap-4 pt-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input type="checkbox" checked={menuForm.isVeg} onChange={e => setMenuForm({...menuForm, isVeg: e.target.checked})} className="w-4 h-4 text-emerald-600 accent-emerald-500" />
+                  Is Vegetarian
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <input type="checkbox" checked={menuForm.isActive} onChange={e => setMenuForm({...menuForm, isActive: e.target.checked})} className="w-4 h-4 text-blue-600 accent-blue-500" />
+                  Is Active/Available
+                </label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button onClick={() => { setShowAddMenu(false); setEditingMenu(null); }} className="px-4 py-1.5 text-xs font-semibold text-slate-600">Cancel</button>
+              <button onClick={handleSaveMenuItem} className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">Save Item</button>
             </div>
           </div>
         </div>
