@@ -29,27 +29,40 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => today.toISOString().slice(0, 10), [today]);
+  const [startDateStr, setStartDateStr] = useState(todayStr);
+
+  const startDate = useMemo(() => {
+    return new Date(startDateStr + 'T00:00:00');
+  }, [startDateStr]);
 
   const generatedDates = useMemo(() => {
     return Array.from({ length: viewRange }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
       return d.toISOString().slice(0, 10);
     });
-  }, [viewRange, today]);
+  }, [viewRange, startDate]);
 
   const generatedDayLabels = useMemo(() => {
-    return generatedDates.map((d, i) => {
-      if (i === 0) return 'Today';
+    return generatedDates.map((d) => {
+      if (d === todayStr) return 'Today';
       const dt = new Date(d + 'T00:00:00');
       const day = dt.toLocaleDateString('en-IN', { weekday: 'short' });
       const date = dt.getDate();
       const mon = dt.toLocaleDateString('en-IN', { month: 'short' });
       return `${day} ${date} ${mon}`;
     });
-  }, [generatedDates]);
+  }, [generatedDates, todayStr]);
 
-  const todayIdx = 0;
+  const todayIdx = useMemo(() => {
+    return generatedDates.indexOf(todayStr);
+  }, [generatedDates, todayStr]);
+
+  const shiftDate = (days) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + days);
+    setStartDateStr(d.toISOString().slice(0, 10));
+  };
 
   const filteredBookings = useMemo(() => {
     return (bookings || []).filter(b => {
@@ -216,6 +229,28 @@ export default function CalendarGrid({ roomCategories, bookings, onCellClick }) 
                 {opt.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Date Selector & Navigation Controls */}
+        {viewMode === 'grid' && (
+          <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-100">
+            <button onClick={() => shiftDate(-viewRange)}
+              className="px-2 py-1 text-[10px] font-bold rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+              ◀ Prev
+            </button>
+            <input type="date" value={startDateStr} onChange={e => setStartDateStr(e.target.value)}
+              className="px-2 py-0.5 text-[10px] border border-slate-200 rounded bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold" />
+            <button onClick={() => setStartDateStr(todayStr)}
+              className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${
+                startDateStr === todayStr ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}>
+              Today
+            </button>
+            <button onClick={() => shiftDate(viewRange)}
+              className="px-2 py-1 text-[10px] font-bold rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+              Next ▶
+            </button>
           </div>
         )}
 
