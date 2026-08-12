@@ -17,6 +17,7 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import WaterparkCounterPage from './pages/WaterparkCounterPage';
 import WebsiteCMSPage from './pages/WebsiteCMSPage';
+import KitchenInventoryPage from './pages/KitchenInventoryPage';
 import { sidebarModules } from './data/mockData';
 import { ChevronLeft } from 'lucide-react';
 
@@ -34,8 +35,10 @@ function AppInner() {
       setActiveModule('hk');
     } else if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(activeModule)) {
       setActiveModule('calendar');
-    } else if (role === 'restaurant_staff' && activeModule !== 'pos') {
+    } else if (role === 'restaurant_staff' && !['pos', 'kitchen_inventory'].includes(activeModule)) {
       setActiveModule('pos');
+    } else if (role === 'kitchen_staff' && !['kitchen_inventory', 'pos'].includes(activeModule)) {
+      setActiveModule('kitchen_inventory');
     } else if (role === 'waterpark_staff' && activeModule !== 'waterpark') {
       setActiveModule('waterpark');
     } else if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
@@ -71,7 +74,7 @@ function AppInner() {
     const role = user?.role;
     if (role === 'hk_staff' && module !== 'hk') return;
     if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(module)) return;
-    if (role === 'restaurant_staff' && module !== 'pos') return;
+    if (role === 'restaurant_staff' && !['pos', 'kitchen_inventory'].includes(module)) return;
     if (role === 'waterpark_staff' && module !== 'waterpark') return;
     if (module === 'website_cms' && !['admin', 'super_admin'].includes(role)) return;
     if (role === 'staff' && ['pricing', 'accounts', 'settings', 'website_cms'].includes(module)) return;
@@ -83,6 +86,7 @@ function AppInner() {
       case 'dashboard': return <DashboardPage />;
       case 'roomview': return <RoomViewPage />;
       case 'pos': return <POSPage />;
+      case 'kitchen_inventory': return <KitchenInventoryPage />;
       case 'hk': return <HousekeepingPage />;
       case 'pricing': return <PricingPage />;
       case 'accounts': return <AccountsPage />;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed,
+  LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed, Boxes,
   SprayCan, DollarSign, Receipt, FileText, Settings, LogOut, Ticket, Globe,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { useApp } from '../store/AppContext';
 import { api } from '../services/api';
 
 const iconMap = {
-  LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed,
+  LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed, Boxes,
   SprayCan, DollarSign, Receipt, FileText, Settings, Ticket, Globe
 };
 
@@ -43,6 +43,7 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
     if (role === 'hk_staff') return 'Housekeeping';
     if (role === 'booking_staff') return 'Booking Staff';
     if (role === 'restaurant_staff') return 'Restaurant Staff';
+    if (role === 'kitchen_staff') return 'Kitchen Staff (Chef)';
     if (role === 'waterpark_staff') return 'Waterpark Counter';
     return 'Staff Member';
   };
@@ -52,11 +53,12 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
   const isStaff = role === 'staff' || role === 'booking_staff';
   const isHKStaff = role === 'hk_staff';
   const isRestaurantStaff = role === 'restaurant_staff';
+  const isKitchenStaff = role === 'kitchen_staff';
   const isWaterparkStaff = role === 'waterpark_staff';
   const filteredModules = modules.filter(mod => {
     if (isHKStaff) return mod.id === 'hk';
     if (role === 'booking_staff') return ['calendar', 'roomview', 'reports'].includes(mod.id);
-    if (isRestaurantStaff) return mod.id === 'pos';
+    if (isRestaurantStaff || isKitchenStaff) return ['pos', 'kitchen_inventory'].includes(mod.id);
     if (isWaterparkStaff) return mod.id === 'waterpark';
     if (isStaff) return !['pricing', 'accounts', 'settings', 'website_cms'].includes(mod.id);
     return true;

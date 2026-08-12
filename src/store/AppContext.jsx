@@ -8,6 +8,9 @@ import {
   pricingRates as fallbackPricing, transactions as fallbackTxns,
   vouchers as fallbackVouchers, userRoles as fallbackRoles,
   dailyRevenue as fallbackDailyRev, folioCharges as fallbackFolioCharges,
+  mockInventoryItems as fallbackInventoryItems, mockRecipes as fallbackRecipes,
+  mockInventoryTransactions as fallbackInventoryTransactions, mockSuppliers as fallbackSuppliers,
+  mockAudits as fallbackAudits, mockPurchaseOrders as fallbackPOs,
 } from '../data/mockData';
 
 const initialState = {
@@ -18,6 +21,12 @@ const initialState = {
   posTables: fallbackPosTables,
   menuItems: fallbackMenuItems,
   pricingRates: fallbackPricing,
+  inventoryItems: fallbackInventoryItems,
+  recipes: fallbackRecipes,
+  inventoryTransactions: fallbackInventoryTransactions,
+  suppliers: fallbackSuppliers,
+  audits: fallbackAudits,
+  purchaseOrders: fallbackPOs,
   stopSell: {},
   dateRateOverrides: {},
   transactions: fallbackTxns,
@@ -29,11 +38,13 @@ const initialState = {
     { id: 'demo_booking', name: 'Booking Staff', email: 'priya@yoyo.com', password: 'admin123', role: 'booking_staff', isActive: true },
     { id: 'demo_hk', name: 'Housekeeping Staff', email: 'rajesh@yoyo.com', password: 'admin123', role: 'hk_staff', isActive: true },
     { id: 'demo_restaurant', name: 'Restaurant Staff', email: 'vikram@yoyo.com', password: 'admin123', role: 'restaurant_staff', isActive: true },
+    { id: 'demo_kitchen', name: 'Kitchen Staff (Chef)', email: 'chef@yoyo.com', password: 'admin123', role: 'kitchen_staff', isActive: true },
     { id: 'demo_waterpark', name: 'Waterpark Staff', email: 'waterpark@yoyo.com', password: 'admin123', role: 'waterpark_staff', isActive: true },
   ],
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
+    kitchenInventoryMode: 'advanced', // 'simple' | 'advanced'
     minAdvancePct: 0, minAdvanceAmt: 0,
     receiptHotelName: 'YOYO Fun Resort & Water Park',
     receiptAddress: 'Plot No. 12, Waterfront Road, Near Beach Colony',
@@ -50,7 +61,7 @@ const initialState = {
   auditLog: [],
   enabledModules: {
     dashboard: true, calendar: true, roomview: true,
-    pos: true, hk: true, pricing: true,
+    pos: true, kitchen_inventory: true, hk: true, pricing: true,
     accounts: true, reports: true, settings: true,
   },
 };
@@ -128,8 +139,163 @@ function reducer(state, action) {
       return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, status: 'occupied', kotCount: 0, guestName: action.payload.guestName || 'Guest', guestPhone: action.payload.guestPhone || '', orderValue: 0, currentCart: [], orderItems: [] } : t) };
     case 'UPDATE_TABLE_CART':
       return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, orderItems: [...(t.orderItems || []), ...(action.payload.cart || [])], orderValue: (t.orderValue || 0) + (action.payload.cart || []).reduce((s, c) => s + c.price * c.qty, 0), currentCart: [] } : t) };
-    case 'UPDATE_TABLE_ORDER':
-      return { ...state, posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + (action.payload.kotDelta || 1), orderValue: (t.orderValue || 0) + action.payload.valueDelta, orderItems: [...(t.orderItems || []), ...(action.payload.items || [])], status: 'occupied', currentCart: [] } : t) };
+    case 'UPDATE_TABLE_ORDER': {
+      const items = action.payload.items || [];
+      let updatedInventory = [...(state.inventoryItems || [])];
+      let newTxs = [...(state.inventoryTransactions || [])];
+      
+      items.forEach(orderedItem => {
+        const recipe = (state.recipes || []).find(r => r.menuItemName?.toLowerCase() === orderedItem.name?.toLowerCase());
+        if (recipe && recipe.ingredients) {
+          recipe.ingredients.forEach(ing => {
+            const idx = updatedInventory.findIndex(inv => inv.id === ing.inventoryItemId || inv.name === ing.name);
+            if (idx >= 0) {
+              const item = updatedInventory[idx];
+              const reqQty = (ing.qty || ing.quantityRequired || 0) * (orderedItem.qty || 1);
+              const newStock = Math.max(0, parseFloat((item.currentStock - reqQty).toFixed(2)));
+              updatedInventory[idx] = { ...item, currentStock: newStock };
+              newTxs.unshift({
+                id: `TX-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+                date: new Date().toLocaleString(),
+                type: 'pos_deduction',
+                item: item.name,
+                qty: `-${reqQty} ${item.unit}`,
+                cost: `₹${Math.round(reqQty * (item.unitCost || 0))}`,
+                ref: `KOT-${orderedItem.name}`,
+                reason: `POS Order: ${orderedItem.qty || 1}x ${orderedItem.name}`,
+              });
+            }
+          });
+        }
+      });
+
+      return {
+        ...state,
+        inventoryItems: updatedInventory,
+        inventoryTransactions: newTxs,
+        posTables: state.posTables.map(t => t.id === action.payload.tableId ? { ...t, kotCount: (t.kotCount || 0) + (action.payload.kotDelta || 1), orderValue: (t.orderValue || 0) + action.payload.valueDelta, orderItems: [...(t.orderItems || []), ...(action.payload.items || [])], status: 'occupied', currentCart: [] } : t),
+      };
+    }
+    case 'ADD_INVENTORY_ITEM':
+      return { ...state, inventoryItems: [...state.inventoryItems, { id: `INV-${Date.now()}`, ...action.payload }] };
+    case 'UPDATE_INVENTORY_ITEM':
+      return { ...state, inventoryItems: state.inventoryItems.map(item => item.id === action.payload.id ? { ...item, ...action.payload } : item) };
+    case 'LOG_STOCK_IN': {
+      const { itemId, qty, unit, unitPrice, reason, supplier } = action.payload;
+      const itemIdx = state.inventoryItems.findIndex(i => i.id === itemId);
+      let updatedItems = [...state.inventoryItems];
+      if (itemIdx >= 0) {
+        const item = updatedItems[itemIdx];
+        updatedItems[itemIdx] = {
+          ...item,
+          currentStock: parseFloat((item.currentStock + parseFloat(qty)).toFixed(2)),
+          unitCost: unitPrice ? parseFloat(unitPrice) : item.unitCost,
+        };
+      }
+      const newTx = {
+        id: `TX-${Date.now()}`,
+        date: new Date().toLocaleString(),
+        type: 'purchase_in',
+        item: updatedItems[itemIdx]?.name || 'Item',
+        qty: `+${qty} ${unit}`,
+        cost: `₹${Math.round(qty * (unitPrice || updatedItems[itemIdx]?.unitCost || 0))}`,
+        ref: supplier || 'Inward',
+        reason: reason || 'Stock Receipt',
+      };
+      return { ...state, inventoryItems: updatedItems, inventoryTransactions: [newTx, ...state.inventoryTransactions] };
+    }
+    case 'LOG_WASTAGE': {
+      const { itemId, qty, unit, reason } = action.payload;
+      const itemIdx = state.inventoryItems.findIndex(i => i.id === itemId);
+      let updatedItems = [...state.inventoryItems];
+      if (itemIdx >= 0) {
+        const item = updatedItems[itemIdx];
+        updatedItems[itemIdx] = {
+          ...item,
+          currentStock: Math.max(0, parseFloat((item.currentStock - parseFloat(qty)).toFixed(2))),
+        };
+      }
+      const newTx = {
+        id: `TX-${Date.now()}`,
+        date: new Date().toLocaleString(),
+        type: 'wastage',
+        item: updatedItems[itemIdx]?.name || 'Item',
+        qty: `-${qty} ${unit}`,
+        cost: `₹${Math.round(qty * (updatedItems[itemIdx]?.unitCost || 0))}`,
+        ref: 'Wastage',
+        reason: reason || 'Spoilage',
+      };
+      return { ...state, inventoryItems: updatedItems, inventoryTransactions: [newTx, ...state.inventoryTransactions] };
+    }
+    case 'SAVE_RECIPE': {
+      const existingIdx = state.recipes.findIndex(r => r.menuItemName?.toLowerCase() === action.payload.menuItemName?.toLowerCase());
+      let updatedRecipes = [...state.recipes];
+      if (existingIdx >= 0) {
+        updatedRecipes[existingIdx] = action.payload;
+      } else {
+        updatedRecipes.push(action.payload);
+      }
+      return { ...state, recipes: updatedRecipes };
+    }
+    case 'ADD_SUPPLIER':
+      return { ...state, suppliers: [...state.suppliers, { id: `SUP-${Date.now()}`, ...action.payload }] };
+    case 'CREATE_STOCK_AUDIT': {
+      const newAudit = {
+        id: `AUD-${Date.now()}`,
+        auditNumber: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+        date: new Date().toISOString().slice(0, 10),
+        status: 'draft',
+        notes: action.payload.notes,
+        items: action.payload.items,
+      };
+      return { ...state, audits: [newAudit, ...(state.audits || [])] };
+    }
+    case 'RECONCILE_AUDIT': {
+      const auditId = action.payload;
+      const targetAudit = (state.audits || []).find(a => a.id === auditId);
+      if (!targetAudit) return state;
+
+      let updatedItems = [...state.inventoryItems];
+      let newTxs = [...state.inventoryTransactions];
+
+      (targetAudit.items || []).forEach(ai => {
+        const itemIdx = updatedItems.findIndex(i => i.id === ai.itemId);
+        if (itemIdx >= 0) {
+          const item = updatedItems[itemIdx];
+          updatedItems[itemIdx] = { ...item, currentStock: ai.physicalQty };
+          if (ai.variance !== 0) {
+            newTxs.unshift({
+              id: `TX-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+              date: new Date().toLocaleString(),
+              type: 'adjustment',
+              item: item.name,
+              qty: `${ai.variance > 0 ? '+' : ''}${ai.variance} ${item.unit}`,
+              cost: `₹${Math.abs(ai.costLoss || 0)}`,
+              ref: targetAudit.auditNumber,
+              reason: `Physical Audit Reconciled: ${ai.reason || 'Audit Variance'}`,
+            });
+          }
+        }
+      });
+
+      const updatedAudits = (state.audits || []).map(a => a.id === auditId ? { ...a, status: 'reconciled' } : a);
+      return { ...state, inventoryItems: updatedItems, inventoryTransactions: newTxs, audits: updatedAudits };
+    }
+    case 'CREATE_PURCHASE_ORDER': {
+      const newPO = {
+        id: `PO-${Date.now()}`,
+        poNumber: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+        date: new Date().toISOString().slice(0, 10),
+        supplier: action.payload.supplier,
+        status: 'approved',
+        totalAmount: action.payload.totalAmount,
+        expectedDate: action.payload.expectedDate || 'Within 3 Days',
+        items: action.payload.items,
+      };
+      return { ...state, purchaseOrders: [newPO, ...(state.purchaseOrders || [])] };
+    }
+    case 'SET_KITCHEN_INVENTORY_MODE':
+      return { ...state, defaultRules: { ...state.defaultRules, kitchenInventoryMode: action.payload } };
     case 'BILL_TABLE': {
       const table = state.posTables.find(t => t.id === action.payload.id || t.id === action.payload);
       const taxRate = state.defaultRules?.taxRate || 12;
@@ -1084,6 +1250,9 @@ export function AppProvider({ children }) {
     roomCategories: state.roomCategories, roomStatuses: state.roomStatuses,
     housekeepingStaff: state.housekeepingStaff, posTables: state.posTables,
     menuItems: state.menuItems, pricingRates: state.pricingRates, stopSell: state.stopSell, dateRateOverrides: state.dateRateOverrides,
+    inventoryItems: state.inventoryItems || [], recipes: state.recipes || [],
+    inventoryTransactions: state.inventoryTransactions || [], suppliers: state.suppliers || [],
+    audits: state.audits || [], purchaseOrders: state.purchaseOrders || [],
     transactions: state.transactions, vouchers, roles: state.roles, demoUsers: state.demoUsers,
     defaultRules: state.defaultRules, emailScheduler: state.emailScheduler, enabledModules: state.enabledModules,
     folioCharges: state.folioCharges, bills: state.bills, auditLog: state.auditLog,

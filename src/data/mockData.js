@@ -91,6 +91,7 @@ export const sidebarModules = [
   { id: 'calendar', label: 'Reservation Calendar', icon: 'CalendarDays' },
   { id: 'roomview', label: 'Room View', icon: 'DoorOpen' },
   { id: 'pos', label: 'Waterfront Restaurant', icon: 'UtensilsCrossed', sub: 'KOT & Billing' },
+  { id: 'kitchen_inventory', label: 'Kitchen Inventory', icon: 'Boxes', sub: 'Stock & Recipe BOM' },
   { id: 'hk', label: 'Housekeeping', icon: 'SprayCan', sub: 'Task Assignment' },
   { id: 'pricing', label: 'Pricing / Rates', icon: 'DollarSign' },
   { id: 'accounts', label: 'Accounts & Finance', icon: 'Receipt' },
@@ -325,4 +326,84 @@ export const userRoles = [
     id: 5, name: 'Accountant', users: 1,
     permissions: { dashboard: false, calendar: false, pos: false, housekeeping: false, pricing: false, accounts: true, reports: true, settings: false },
   },
+  {
+    id: 6, name: 'Head Chef / Kitchen Staff', users: 2,
+    permissions: { dashboard: false, calendar: false, pos: true, kitchen_inventory: true, housekeeping: false, pricing: false, accounts: false, reports: false, settings: false },
+  },
 ];
+
+export const mockSuppliers = [
+  { id: 'SUP01', name: 'Fresh Dairy & Farms', phone: '+91 98765 43210', email: 'orders@freshdairy.com', address: 'Plot 12, MIDC Industrial Area', gstin: '27AAAAA0000A1Z5' },
+  { id: 'SUP02', name: 'Metro Cash & Carry', phone: '+91 98111 22334', email: 'b2b@metro.co.in', address: 'Sector 18, Commercial Hub', gstin: '27BBBBB1111B2Z6' },
+  { id: 'SUP03', name: 'Royal Spice Traders', phone: '+91 97222 33445', email: 'sales@royalspices.com', address: 'Spices Market, Old Town', gstin: '27CCCCC2222C3Z7' },
+];
+
+export const mockInventoryItems = [
+  { id: 'INV-101', sku: 'RAW-001', name: 'Paneer (Fresh Cottage Cheese)', category: 'Dairy', unit: 'kg', currentStock: 4.5, minStockLevel: 5.0, unitCost: 320, supplier: 'Fresh Dairy & Farms', batchNumber: 'BAT-2026-881', expiryDate: '2026-08-15' },
+  { id: 'INV-102', sku: 'RAW-002', name: 'Tomato Puree', category: 'Vegetables', unit: 'kg', currentStock: 12.0, minStockLevel: 4.0, unitCost: 80, supplier: 'Metro Cash & Carry', batchNumber: 'BAT-2026-412', expiryDate: '2026-09-30' },
+  { id: 'INV-103', sku: 'RAW-003', name: 'Refined Cooking Oil', category: 'Dry Pantry', unit: 'L', currentStock: 25.0, minStockLevel: 10.0, unitCost: 140, supplier: 'Metro Cash & Carry', batchNumber: 'BAT-2026-104', expiryDate: '2027-01-15' },
+  { id: 'INV-104', sku: 'RAW-004', name: 'Basmati Rice (Premium)', category: 'Dry Pantry', unit: 'kg', currentStock: 45.0, minStockLevel: 15.0, unitCost: 110, supplier: 'Metro Cash & Carry', batchNumber: 'BAT-2026-090', expiryDate: '2027-06-30' },
+  { id: 'INV-105', sku: 'RAW-005', name: 'Fresh Whole Milk', category: 'Dairy', unit: 'L', currentStock: 8.0, minStockLevel: 10.0, unitCost: 65, supplier: 'Fresh Dairy & Farms', batchNumber: 'BAT-2026-902', expiryDate: '2026-08-14' },
+  { id: 'INV-106', sku: 'RAW-006', name: 'Amul Butter', category: 'Dairy', unit: 'kg', currentStock: 3.2, minStockLevel: 2.0, unitCost: 540, supplier: 'Fresh Dairy & Farms', batchNumber: 'BAT-2026-310', expiryDate: '2026-08-20' },
+  { id: 'INV-107', sku: 'RAW-007', name: 'Chicken (Bone-in)', category: 'Meat', unit: 'kg', currentStock: 15.0, minStockLevel: 8.0, unitCost: 220, supplier: 'Fresh Meat Supplies', batchNumber: 'BAT-2026-551', expiryDate: '2026-08-16' },
+  { id: 'INV-108', sku: 'RAW-008', name: 'Garam Masala Blend', category: 'Spices', unit: 'g', currentStock: 850.0, minStockLevel: 500.0, unitCost: 0.8, supplier: 'Royal Spice Traders', batchNumber: 'BAT-2026-112', expiryDate: '2027-03-31' },
+];
+
+export const mockRecipes = [
+  {
+    menuItemName: 'Paneer Butter Masala',
+    sellingPrice: 340,
+    ingredients: [
+      { inventoryItemId: 'INV-101', name: 'Paneer (Fresh Cottage Cheese)', qty: 0.2, unit: 'kg' },
+      { inventoryItemId: 'INV-102', name: 'Tomato Puree', qty: 0.1, unit: 'kg' },
+      { inventoryItemId: 'INV-106', name: 'Amul Butter', qty: 0.03, unit: 'kg' },
+      { inventoryItemId: 'INV-108', name: 'Garam Masala Blend', qty: 10, unit: 'g' },
+    ],
+  },
+  {
+    menuItemName: 'Chicken Biryani',
+    sellingPrice: 420,
+    ingredients: [
+      { inventoryItemId: 'INV-107', name: 'Chicken (Bone-in)', qty: 0.25, unit: 'kg' },
+      { inventoryItemId: 'INV-104', name: 'Basmati Rice (Premium)', qty: 0.2, unit: 'kg' },
+      { inventoryItemId: 'INV-103', name: 'Refined Cooking Oil', qty: 0.05, unit: 'L' },
+    ],
+  },
+];
+
+export const mockInventoryTransactions = [
+  { id: 'TX-1001', date: '2026-08-12 10:30 AM', type: 'purchase_in', item: 'Paneer (Fresh Cottage Cheese)', qty: '+10.0 kg', cost: '₹3,200', ref: 'INV-9941', reason: 'Weekly Purchase' },
+  { id: 'TX-1002', date: '2026-08-12 01:15 PM', type: 'pos_deduction', item: 'Paneer (Fresh Cottage Cheese)', qty: '-0.6 kg', cost: '₹192', ref: 'KOT-3', reason: 'POS Order: 3x Paneer Butter Masala' },
+  { id: 'TX-1003', date: '2026-08-12 04:00 PM', type: 'wastage', item: 'Fresh Whole Milk', qty: '-2.0 L', cost: '₹130', ref: 'WST-12', reason: 'Spoiled due to fridge power glitch' },
+];
+
+export const mockAudits = [
+  {
+    id: 'AUD-8801',
+    auditNumber: 'AUD-8801',
+    date: '2026-08-10',
+    status: 'reconciled',
+    notes: 'Weekly Kitchen Physical Stock Audit',
+    items: [
+      { itemId: 'INV-101', name: 'Paneer (Fresh Cottage Cheese)', systemQty: 6.0, physicalQty: 4.5, variance: -1.5, unit: 'kg', costLoss: 480, reason: 'Over-portioning in dinner service' },
+      { itemId: 'INV-105', name: 'Fresh Whole Milk', systemQty: 10.0, physicalQty: 8.0, variance: -2.0, unit: 'L', costLoss: 130, reason: 'Spoilage' },
+    ],
+  },
+];
+
+export const mockPurchaseOrders = [
+  {
+    id: 'PO-9001',
+    poNumber: 'PO-9001',
+    date: '2026-08-11',
+    supplier: 'Fresh Dairy & Farms',
+    status: 'approved',
+    totalAmount: 4850,
+    expectedDate: '2026-08-14',
+    items: [
+      { itemId: 'INV-101', name: 'Paneer (Fresh Cottage Cheese)', qty: 10, unit: 'kg', unitPrice: 320, total: 3200 },
+      { itemId: 'INV-105', name: 'Fresh Whole Milk', qty: 25, unit: 'L', unitPrice: 65, total: 1625 },
+    ],
+  },
+];
+

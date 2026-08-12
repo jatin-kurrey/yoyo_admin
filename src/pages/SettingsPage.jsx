@@ -476,6 +476,66 @@ export default function SettingsPage() {
                     <span className="text-xs text-slate-600 font-semibold text-slate-700">Single Payment Mode (Full Payment at Check-In)</span>
                     <input type="checkbox" checked={localRules?.singlePaymentMode || false} onChange={e => setLocalRules({...localRules, singlePaymentMode: e.target.checked})} className="w-4 h-4 text-slate-800 border-slate-200 rounded focus:ring-slate-500" />
                   </div>
+                  
+                  {/* Kitchen Inventory Mode Switcher */}
+                  <div className="pt-3 border-t border-slate-100">
+                    <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Kitchen Inventory Management Interface Mode
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2.5">
+                      Switch between simple lightweight kitchen operations or full commercial enterprise suite.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLocalRules({ ...localRules, kitchenInventoryMode: 'simple' });
+                          dispatch({ type: 'SET_KITCHEN_INVENTORY_MODE', payload: 'simple' });
+                          showToast('Switched to Simple Kitchen Inventory Mode');
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          (localRules?.kitchenInventoryMode || 'advanced') === 'simple'
+                            ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          ⚡ Simple Mode
+                          {(localRules?.kitchenInventoryMode || 'advanced') === 'simple' && (
+                            <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          Fast single-page view with quick +/- stock updates & simple log.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLocalRules({ ...localRules, kitchenInventoryMode: 'advanced' });
+                          dispatch({ type: 'SET_KITCHEN_INVENTORY_MODE', payload: 'advanced' });
+                          showToast('Switched to Enterprise Kitchen Inventory Mode');
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          (localRules?.kitchenInventoryMode || 'advanced') === 'advanced'
+                            ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          🚀 Enterprise Mode
+                          {(localRules?.kitchenInventoryMode || 'advanced') === 'advanced' && (
+                            <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          Full 8-tab suite: COGS Food Costing, Physical Audits, PO Generator & FEFO.
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

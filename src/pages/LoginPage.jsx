@@ -162,8 +162,8 @@ export default function LoginPage() {
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {demoUsers.filter(u => u.isActive).map((du) => {
-              const roleColors = { super_admin: 'text-emerald-400', admin: 'text-emerald-400', staff: 'text-blue-400', hk_staff: 'text-purple-400', booking_staff: 'text-cyan-400', restaurant_staff: 'text-orange-400' };
-              const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', staff: 'Staff', hk_staff: 'Housekeeping', booking_staff: 'Booking Staff', restaurant_staff: 'Restaurant Staff' };
+              const roleColors = { super_admin: 'text-emerald-400', admin: 'text-emerald-400', staff: 'text-blue-400', hk_staff: 'text-purple-400', booking_staff: 'text-cyan-400', restaurant_staff: 'text-orange-400', kitchen_staff: 'text-amber-400', waterpark_staff: 'text-blue-400' };
+              const roleLabels = { super_admin: 'Super Admin', admin: 'Admin', staff: 'Staff', hk_staff: 'Housekeeping', booking_staff: 'Booking Staff', restaurant_staff: 'Restaurant Staff', kitchen_staff: 'Kitchen Staff (Chef)', waterpark_staff: 'Waterpark Staff' };
               return (
                 <button key={du.id} type="button"
                   onClick={() => handleFillDemo(du.email, du.password)}
