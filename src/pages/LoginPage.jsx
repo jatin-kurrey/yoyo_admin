@@ -40,9 +40,19 @@ export default function LoginPage() {
         showToast('Login successful! Loading live data...');
         refreshData();
       } else {
+        const matchedDemo = demoUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+        if (matchedDemo) {
+          handleDemoMode(matchedDemo.email, matchedDemo.password, matchedDemo.role);
+          return;
+        }
         setError(res.message || 'Invalid email or password.');
       }
     } catch (err) {
+      const matchedDemo = demoUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+      if (matchedDemo) {
+        handleDemoMode(matchedDemo.email, matchedDemo.password, matchedDemo.role);
+        return;
+      }
       setError(err.message || 'Backend not reachable. Continue in Demo Mode below.');
       setShowBackendFailed(true);
     } finally {
