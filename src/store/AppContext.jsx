@@ -44,7 +44,7 @@ const initialState = {
   defaultRules: {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
-    kitchenInventoryMode: 'advanced', // 'simple' | 'advanced'
+    kitchenInventoryMode: 'simple', // 'simple' | 'advanced' (Default: simple)
     minAdvancePct: 0, minAdvanceAmt: 0,
     receiptHotelName: 'YOYO Fun Resort & Water Park',
     receiptAddress: 'Plot No. 12, Waterfront Road, Near Beach Colony',

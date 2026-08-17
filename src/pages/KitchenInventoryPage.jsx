@@ -10,11 +10,14 @@ import { useApp } from '../store/AppContext';
 export default function KitchenInventoryPage() {
   const {
     inventoryItems, recipes, inventoryTransactions, suppliers,
-    audits, purchaseOrders, menuItems, defaultRules, dispatch, showToast
+    audits, purchaseOrders, menuItems, defaultRules, user, dispatch, showToast
   } = useApp();
 
-  // Mode check: 'simple' vs 'advanced'
-  const currentMode = defaultRules?.kitchenInventoryMode || 'advanced';
+  // Role check: Only Super Admin/Admin can toggle mode
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+
+  // Mode check: 'simple' vs 'advanced' (Default: simple)
+  const currentMode = defaultRules?.kitchenInventoryMode || 'simple';
 
   const [activeTab, setActiveTab] = useState('stock'); // stock | recipes | costing | audits | pos | suppliers | alerts
   const [searchTerm, setSearchTerm] = useState('');
@@ -301,12 +304,14 @@ export default function KitchenInventoryPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleToggleMode('advanced')}
-              className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200"
-            >
-              <RefreshCw size={13} /> Switch to Enterprise Mode
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => handleToggleMode('advanced')}
+                className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200"
+              >
+                <RefreshCw size={13} /> Switch to Enterprise Mode
+              </button>
+            )}
             <button
               onClick={() => setShowAddItemModal(true)}
               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm"
@@ -507,12 +512,14 @@ export default function KitchenInventoryPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => handleToggleMode('simple')}
-            className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm"
-          >
-            <Zap size={13} className="text-emerald-600" /> Switch to Simple Mode
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => handleToggleMode('simple')}
+              className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm"
+            >
+              <Zap size={13} className="text-emerald-600" /> Switch to Simple Mode
+            </button>
+          )}
           <button
             onClick={handleOpenAuditModal}
             className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition-colors"
