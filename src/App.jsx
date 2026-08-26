@@ -18,6 +18,7 @@ import LoginPage from './pages/LoginPage';
 import WaterparkCounterPage from './pages/WaterparkCounterPage';
 import WebsiteCMSPage from './pages/WebsiteCMSPage';
 import KitchenInventoryPage from './pages/KitchenInventoryPage';
+import CostumeLockerPage from './pages/CostumeLockerPage';
 import { sidebarModules } from './data/mockData';
 import { ChevronLeft } from 'lucide-react';
 
@@ -39,7 +40,7 @@ function AppInner() {
       setActiveModule('pos');
     } else if (role === 'kitchen_staff' && !['kitchen_inventory', 'pos'].includes(activeModule)) {
       setActiveModule('kitchen_inventory');
-    } else if (role === 'waterpark_staff' && activeModule !== 'waterpark') {
+    } else if (role === 'waterpark_staff' && !['waterpark', 'costume_locker'].includes(activeModule)) {
       setActiveModule('waterpark');
     } else if (role === 'staff' && ['pricing', 'accounts', 'settings'].includes(activeModule)) {
       setActiveModule('calendar');
@@ -75,7 +76,7 @@ function AppInner() {
     if (role === 'hk_staff' && module !== 'hk') return;
     if (role === 'booking_staff' && !['calendar', 'roomview', 'reports'].includes(module)) return;
     if (role === 'restaurant_staff' && !['pos', 'kitchen_inventory'].includes(module)) return;
-    if (role === 'waterpark_staff' && module !== 'waterpark') return;
+    if (role === 'waterpark_staff' && !['waterpark', 'costume_locker'].includes(module)) return;
     if (module === 'website_cms' && !['admin', 'super_admin'].includes(role)) return;
     if (role === 'staff' && ['pricing', 'accounts', 'settings', 'website_cms'].includes(module)) return;
     setActiveModule(module);
@@ -93,6 +94,7 @@ function AppInner() {
       case 'reports': return <ReportsPage />;
       case 'settings': return <SettingsPage />;
       case 'waterpark': return <WaterparkCounterPage />;
+      case 'costume_locker': return <CostumeLockerPage />;
       case 'website_cms': return <WebsiteCMSPage />;
       case 'calendar':
       default:

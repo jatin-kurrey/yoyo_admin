@@ -97,6 +97,7 @@ export const sidebarModules = [
   { id: 'accounts', label: 'Accounts & Finance', icon: 'Receipt' },
   { id: 'reports', label: 'Reports', icon: 'FileText', sub: 'Night Audit' },
   { id: 'waterpark', label: 'Ticket Counter', icon: 'Ticket', sub: 'Waterpark Booking' },
+  { id: 'costume_locker', label: 'Costumes & Lockers', icon: 'Key', sub: 'Locker Rental & Caution' },
   { id: 'website_cms', label: 'Website CMS', icon: 'Globe', sub: 'Manage Website Content' },
   { id: 'settings', label: 'Settings', icon: 'Settings', sub: 'User Roles' },
 ];
@@ -404,6 +405,50 @@ export const mockPurchaseOrders = [
       { itemId: 'INV-101', name: 'Paneer (Fresh Cottage Cheese)', qty: 10, unit: 'kg', unitPrice: 320, total: 3200 },
       { itemId: 'INV-105', name: 'Fresh Whole Milk', qty: 25, unit: 'L', unitPrice: 65, total: 1625 },
     ],
+  },
+];
+
+export const mockCustomers = [
+  { id: 'CUST-1001', customerCode: 'CST-1001', name: 'Amit Sharma', phone: '+91 98765 11223', email: 'amit@gmail.com', roomNumber: '101', wristbandId: 'BAND-402', depositBalance: 200, unpaidBalance: 0 },
+  { id: 'CUST-1002', customerCode: 'CST-1002', name: 'Neha Verma', phone: '+91 98111 55443', email: 'neha@gmail.com', roomNumber: '', wristbandId: 'BAND-509', depositBalance: 150, unpaidBalance: 0 },
+  { id: 'CUST-1003', customerCode: 'CST-1003', name: 'Rohan Mehta', phone: '+91 97222 99887', email: 'rohan@gmail.com', roomNumber: '203', wristbandId: 'BAND-612', depositBalance: 0, unpaidBalance: 0 },
+];
+
+export const mockLockers = [
+  { id: 'LOC-101', lockerNumber: 'L-101', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Amit Sharma', assignedPhone: '+91 98765 11223', assignedCustomerCode: 'CST-1001' },
+  { id: 'LOC-102', lockerNumber: 'L-102', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-103', lockerNumber: 'L-103', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Neha Verma', assignedPhone: '+91 98111 55443', assignedCustomerCode: 'CST-1002' },
+  { id: 'LOC-104', lockerNumber: 'L-104', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-105', lockerNumber: 'L-105', zone: 'VIP Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+];
+
+export const mockCostumes = [
+  { id: 'COS-01', code: 'CST-M-L', name: 'Gents Swim Costume (Large)', category: 'Men', size: 'L', totalStock: 40, availableStock: 32, rentalFee: 60, securityDeposit: 50 },
+  { id: 'COS-02', code: 'CST-F-M', name: 'Ladies Swim Suit (Medium)', category: 'Women', size: 'M', totalStock: 35, availableStock: 28, rentalFee: 80, securityDeposit: 50 },
+  { id: 'COS-03', code: 'CST-K-S', name: 'Kids Swimwear (Small)', category: 'Kids', size: 'S', totalStock: 25, availableStock: 21, rentalFee: 50, securityDeposit: 50 },
+  { id: 'COS-04', code: 'TWL-STD', name: 'Cotton Bath Towel (Large)', category: 'Unisex', size: 'XL', totalStock: 100, availableStock: 85, rentalFee: 40, securityDeposit: 50 },
+];
+
+export const mockCostumeIssues = [
+  {
+    id: 'ISS-9901',
+    issueNumber: 'ISS-9901',
+    customerCode: 'CST-1001',
+    guestName: 'Amit Sharma',
+    guestPhone: '+91 98765 11223',
+    roomNumber: '101',
+    wristbandId: 'BAND-402',
+    lockerNumber: 'L-101',
+    costumes: [
+      { costumeId: 'COS-01', code: 'CST-M-L', name: 'Gents Swim Costume (Large)', quantity: 1, rentalFee: 60, deposit: 50 },
+      { costumeId: 'COS-04', code: 'TWL-STD', name: 'Cotton Bath Towel (Large)', quantity: 1, rentalFee: 40, deposit: 50 },
+    ],
+    totalRentalFee: 200,
+    totalDepositHeld: 200,
+    grandTotalPaid: 400,
+    paymentMode: 'UPI',
+    status: 'issued',
+    issuedAt: '2026-08-26 11:30 AM',
   },
 ];
 

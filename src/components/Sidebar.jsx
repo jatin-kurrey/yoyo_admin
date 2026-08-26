@@ -2,14 +2,14 @@ import { useState } from 'react';
 import {
   LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed, Boxes,
   SprayCan, DollarSign, Receipt, FileText, Settings, LogOut, Ticket, Globe,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Key
 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { api } from '../services/api';
 
 const iconMap = {
   LayoutDashboard, CalendarDays, DoorOpen, UtensilsCrossed, Boxes,
-  SprayCan, DollarSign, Receipt, FileText, Settings, Ticket, Globe
+  SprayCan, DollarSign, Receipt, FileText, Settings, Ticket, Globe, Key
 };
 
 export default function Sidebar({ modules, activeModule, onNavigate }) {
@@ -59,7 +59,7 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
     if (isHKStaff) return mod.id === 'hk';
     if (role === 'booking_staff') return ['calendar', 'roomview', 'reports'].includes(mod.id);
     if (isRestaurantStaff || isKitchenStaff) return ['pos', 'kitchen_inventory'].includes(mod.id);
-    if (isWaterparkStaff) return mod.id === 'waterpark';
+    if (isWaterparkStaff) return ['waterpark', 'costume_locker'].includes(mod.id);
     if (isStaff) return !['pricing', 'accounts', 'settings', 'website_cms'].includes(mod.id);
     return true;
   }).filter(mod => mod.id === 'settings' || state.enabledModules[mod.id] !== false);

@@ -11,6 +11,8 @@ import {
   mockInventoryItems as fallbackInventoryItems, mockRecipes as fallbackRecipes,
   mockInventoryTransactions as fallbackInventoryTransactions, mockSuppliers as fallbackSuppliers,
   mockAudits as fallbackAudits, mockPurchaseOrders as fallbackPOs,
+  mockCustomers as fallbackCustomers, mockLockers as fallbackLockers,
+  mockCostumes as fallbackCostumes, mockCostumeIssues as fallbackIssues,
 } from '../data/mockData';
 
 const initialState = {
@@ -27,6 +29,10 @@ const initialState = {
   suppliers: fallbackSuppliers,
   audits: fallbackAudits,
   purchaseOrders: fallbackPOs,
+  customers: fallbackCustomers,
+  lockers: fallbackLockers,
+  costumes: fallbackCostumes,
+  costumeIssues: fallbackIssues,
   stopSell: {},
   dateRateOverrides: {},
   transactions: fallbackTxns,
@@ -296,6 +302,143 @@ function reducer(state, action) {
     }
     case 'SET_KITCHEN_INVENTORY_MODE':
       return { ...state, defaultRules: { ...state.defaultRules, kitchenInventoryMode: action.payload } };
+    case 'SYNC_CUSTOMER': {
+      const existingIdx = (state.customers || []).findIndex(c => c.customerCode === action.payload.customerCode || (c.phone && c.phone === action.payload.phone));
+      let updatedCusts = [...(state.customers || [])];
+      if (existingIdx >= 0) {
+        updatedCusts[existingIdx] = { ...updatedCusts[existingIdx], ...action.payload };
+      } else {
+        updatedCusts.unshift({
+          id: `CUST-${Date.now()}`,
+          customerCode: action.payload.customerCode || `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+          depositBalance: 0,
+          unpaidBalance: 0,
+          ...action.payload,
+        });
+      }
+      return { ...state, customers: updatedCusts };
+    }
+    case 'ISSUE_LOCKER_COSTUME': {
+      const issue = action.payload;
+      let updatedLockers = [...(state.lockers || [])];
+      let updatedCostumes = [...(state.costumes || [])];
+      let updatedCustomers = [...(state.customers || [])];
+
+      // 1. Assign Locker
+      if (issue.lockerNumber) {
+        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === issue.lockerNumber);
+        if (lIdx >= 0) {
+          updatedLockers[lIdx] = {
+            ...updatedLockers[lIdx],
+            status: 'assigned',
+            assignedTo: issue.guestName,
+            assignedPhone: issue.guestPhone,
+            assignedCustomerCode: issue.customerCode,
+          };
+        }
+      }
+
+      // 2. Deduct Costume Available Stock
+      (issue.costumes || []).forEach(c => {
+        const cIdx = updatedCostumes.findIndex(cs => cs.id === c.costumeId || cs.code === c.code);
+        if (cIdx >= 0) {
+          updatedCostumes[cIdx] = {
+            ...updatedCostumes[cIdx],
+            availableStock: Math.max(0, updatedCostumes[cIdx].availableStock - (c.quantity || 1)),
+          };
+        }
+      });
+
+      // 3. Update Customer Deposit Balance
+      const custIdx = updatedCustomers.findIndex(c => c.customerCode === issue.customerCode);
+      if (custIdx >= 0) {
+        updatedCustomers[custIdx] = {
+          ...updatedCustomers[custIdx],
+          depositBalance: (updatedCustomers[custIdx].depositBalance || 0) + (issue.totalDepositHeld || 0),
+        };
+      }
+
+      const newIssue = {
+        id: `ISS-${Date.now()}`,
+        issueNumber: `ISS-${Math.floor(10000 + Math.random() * 90000)}`,
+        issuedAt: new Date().toLocaleString(),
+        status: 'issued',
+        ...issue,
+      };
+
+      return {
+        ...state,
+        lockers: updatedLockers,
+        costumes: updatedCostumes,
+        customers: updatedCustomers,
+        costumeIssues: [newIssue, ...(state.costumeIssues || [])],
+      };
+    }
+    case 'RETURN_LOCKER_COSTUME': {
+      const { issueId, damageFine = 0, notes } = action.payload;
+      const targetIssue = (state.costumeIssues || []).find(i => i.id === issueId);
+      if (!targetIssue) return state;
+
+      let updatedLockers = [...(state.lockers || [])];
+      let updatedCostumes = [...(state.costumes || [])];
+      let updatedCustomers = [...(state.customers || [])];
+
+      // 1. Release Locker
+      if (targetIssue.lockerNumber) {
+        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === targetIssue.lockerNumber);
+        if (lIdx >= 0) {
+          updatedLockers[lIdx] = {
+            ...updatedLockers[lIdx],
+            status: 'available',
+            assignedTo: '',
+            assignedPhone: '',
+            assignedCustomerCode: '',
+          };
+        }
+      }
+
+      // 2. Restore Costume Available Stock
+      (targetIssue.costumes || []).forEach(c => {
+        const cIdx = updatedCostumes.findIndex(cs => cs.id === c.costumeId || cs.code === c.code);
+        if (cIdx >= 0) {
+          updatedCostumes[cIdx] = {
+            ...updatedCostumes[cIdx],
+            availableStock: Math.min(updatedCostumes[cIdx].totalStock, updatedCostumes[cIdx].availableStock + (c.quantity || 1)),
+          };
+        }
+      });
+
+      // 3. Deduct Customer Deposit Balance
+      const custIdx = updatedCustomers.findIndex(c => c.customerCode === targetIssue.customerCode);
+      if (custIdx >= 0) {
+        updatedCustomers[custIdx] = {
+          ...updatedCustomers[custIdx],
+          depositBalance: Math.max(0, (updatedCustomers[custIdx].depositBalance || 0) - (targetIssue.totalDepositHeld || 0)),
+        };
+      }
+
+      const refundAmt = Math.max(0, (targetIssue.totalDepositHeld || 0) - damageFine);
+      const updatedIssues = (state.costumeIssues || []).map(i => i.id === issueId ? {
+        ...i,
+        status: 'returned',
+        returnedAt: new Date().toLocaleString(),
+        damageFine,
+        refundAmount: refundAmt,
+        notes: notes || i.notes,
+      } : i);
+
+      return {
+        ...state,
+        lockers: updatedLockers,
+        costumes: updatedCostumes,
+        customers: updatedCustomers,
+        costumeIssues: updatedIssues,
+      };
+    }
+    case 'ADD_LOCKER':
+      return { ...state, lockers: [...(state.lockers || []), { id: `LOC-${Date.now()}`, status: 'available', ...action.payload }] };
+    case 'ADD_COSTUME':
+      return { ...state, costumes: [...(state.costumes || []), { id: `COS-${Date.now()}`, availableStock: action.payload.totalStock, ...action.payload }] };
     case 'BILL_TABLE': {
       const table = state.posTables.find(t => t.id === action.payload.id || t.id === action.payload);
       const taxRate = state.defaultRules?.taxRate || 12;
@@ -1253,6 +1396,8 @@ export function AppProvider({ children }) {
     inventoryItems: state.inventoryItems || [], recipes: state.recipes || [],
     inventoryTransactions: state.inventoryTransactions || [], suppliers: state.suppliers || [],
     audits: state.audits || [], purchaseOrders: state.purchaseOrders || [],
+    customers: state.customers || [], lockers: state.lockers || [],
+    costumes: state.costumes || [], costumeIssues: state.costumeIssues || [],
     transactions: state.transactions, vouchers, roles: state.roles, demoUsers: state.demoUsers,
     defaultRules: state.defaultRules, emailScheduler: state.emailScheduler, enabledModules: state.enabledModules,
     folioCharges: state.folioCharges, bills: state.bills, auditLog: state.auditLog,
