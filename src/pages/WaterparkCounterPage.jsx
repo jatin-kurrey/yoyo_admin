@@ -77,6 +77,16 @@ export default function WaterparkCounterPage() {
       if (res.success) {
         showToast('Ticket Booked successfully!');
         
+        // Auto-sync customer to Unified Customer Register
+        const custCode = `CST-${Math.floor(1000 + Math.random() * 9000)}`;
+        dispatch({
+          type: 'SYNC_CUSTOMER',
+          payload: { customerCode: custCode, name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim() }
+        });
+        try {
+          await pmsService.syncWaterparkCustomer({ customer_code: custCode, name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim() });
+        } catch (err) {}
+        
         // Show invoice modal
         const billData = {
           id: res.data.booking_id,

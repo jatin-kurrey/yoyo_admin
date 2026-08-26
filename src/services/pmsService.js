@@ -105,4 +105,15 @@ export const pmsService = {
   createMenuItem: (data) => api.admin.post('/restaurant/items', data),
   updateMenuItem: (id, data) => api.admin.patch(`/restaurant/items/${id}`, data),
   deleteMenuItem: (id) => api.admin.delete(`/restaurant/items/${id}`),
+
+  // Waterpark Costume & Locker Management
+  searchWaterparkCustomers: (q) => api.pms.get(`/waterpark/customers/search${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  syncWaterparkCustomer: (data) => api.pms.post('/waterpark/customers/sync', data),
+  getLockers: () => api.pms.get('/waterpark/lockers'),
+  createLocker: (data) => api.pms.post('/waterpark/lockers', data),
+  getCostumes: () => api.pms.get('/waterpark/costumes'),
+  createCostume: (data) => api.pms.post('/waterpark/costumes', data),
+  issueLockerAndCostumes: (data) => api.pms.post('/waterpark/issues', data),
+  returnLockerAndCostumes: (id, data) => api.pms.post(`/waterpark/issues/${id}/return`, data),
+  getWaterparkIssues: () => api.pms.get('/waterpark/issues'),
 };
