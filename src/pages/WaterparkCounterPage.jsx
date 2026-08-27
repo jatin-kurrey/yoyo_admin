@@ -95,14 +95,14 @@ export default function WaterparkCounterPage() {
           tableNumber: null,
           area: 'Waterpark Counter',
           guestName: res.data.customer_name,
-          items: [{ name: res.data.ticket?.title || selectedTicket.title, price: (res.data.ticket?.price || selectedTicket.price) / 100, qty: res.data.quantity }],
-          total: (res.data.amount / 100),
+          items: [{ name: res.data.ticket?.title || selectedTicket.title, price: (res.data.ticket?.price || selectedTicket.price), qty: res.data.quantity }],
+          total: res.data.amount,
           tax: 0,
           taxRate: 0,
-          grandTotal: (res.data.amount / 100),
+          grandTotal: res.data.amount,
           date: new Date().toISOString(),
           paymentMethod,
-          tendered: (res.data.amount / 100),
+          tendered: res.data.amount,
           change: 0,
         };
         
@@ -132,7 +132,7 @@ export default function WaterparkCounterPage() {
     );
   }
 
-  const subtotal = selectedTicket ? (selectedTicket.price * quantity) / 100 : 0;
+  const subtotal = selectedTicket ? (selectedTicket.price * quantity) : 0;
 
   return (
     <div className="flex-1 flex overflow-hidden bg-slate-50">
@@ -161,7 +161,7 @@ export default function WaterparkCounterPage() {
                   </div>
                   <p className="text-[10px] text-slate-500 min-h-8 mb-3">{t.description}</p>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm font-extrabold text-emerald-600">₹{t.price / 100}</span>
+                    <span className="text-sm font-extrabold text-emerald-600">₹{t.price}</span>
                     <span className="text-[9px] text-slate-400">Stock: {t.stock}</span>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ export default function WaterparkCounterPage() {
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Counter Revenue</span>
                 <span className="text-lg font-bold text-emerald-400">
-                  ₹{recentBookings.reduce((s, b) => s + b.amount, 0) / 100}
+                  ₹{recentBookings.reduce((s, b) => s + b.amount, 0)}
                 </span>
               </div>
             </div>
@@ -275,12 +275,12 @@ export default function WaterparkCounterPage() {
                       <div className="text-[9px] text-slate-400">{b.visit_date?.slice(0, 10)}</div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs font-bold text-emerald-600">₹{b.amount / 100}</span>
+                      <span className="text-xs font-bold text-emerald-600">₹{b.amount}</span>
                       <button onClick={() => setInvoiceData({
                         id: b.booking_id, tableNumber: null, area: 'Waterpark Counter', guestName: b.customer_name,
-                        items: [{ name: b.ticket?.title || 'Counter Ticket', price: b.amount / 100 / b.quantity, qty: b.quantity }],
-                        total: b.amount / 100, tax: 0, taxRate: 0, grandTotal: b.amount / 100, date: b.created_at,
-                        paymentMethod: 'Counter', tendered: b.amount / 100, change: 0
+                        items: [{ name: b.ticket?.title || 'Counter Ticket', price: b.amount / b.quantity, qty: b.quantity }],
+                        total: b.amount, tax: 0, taxRate: 0, grandTotal: b.amount, date: b.created_at,
+                        paymentMethod: 'Counter', tendered: b.amount, change: 0
                       })} className="text-[9px] text-blue-600 hover:underline flex items-center gap-0.5">
                         <Printer size={10} /> Print Invoice
                       </button>
