@@ -94,6 +94,17 @@ export default function InvoiceModal({ data, type, onClose }) {
             ${data?.roomNumber ? `Room ${data.roomNumber}` : ''}${data?.tableNumber ? `Table ${data.tableNumber}` : ''}
             ${data?.area ? ` (${data.area})` : ''}
           </div>
+          ${(data?.customerCode || data?.customer_code) ? `
+          <div style="background: #e0e7ff; border: 1px solid #c7d2fe; padding: 8px 12px; margin: 10px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 8px; font-weight: bold; color: #4338ca; text-transform: uppercase; letter-spacing: 0.5px;">UNIFIED CUSTOMER UNIQUE ID</div>
+              <div style="font-size: 15px; font-weight: bold; color: #1e1b4b; font-family: monospace; letter-spacing: 1px;">${data.customerCode || data.customer_code}</div>
+            </div>
+            <div style="font-size: 8px; color: #4338ca; text-align: right; font-weight: bold;">
+              Auto-fills guest info across Lockers, Costumes & POS
+            </div>
+          </div>
+          ` : ''}
         </div>
 
         <div class="section">
@@ -271,6 +282,17 @@ export default function InvoiceModal({ data, type, onClose }) {
               {data?.roomNumber ? <span className="text-slate-500 font-normal"> — Room {data.roomNumber}</span> : ''}
               {data?.tableNumber ? <span className="text-slate-500 font-normal"> — Table {data.tableNumber}{data?.area ? ` (${data.area})` : ''}</span> : ''}
             </div>
+            {(data?.customerCode || data?.customer_code) && (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 my-3 flex items-center justify-between shadow-xs">
+                <div>
+                  <div className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">UNIFIED CUSTOMER UNIQUE ID</div>
+                  <div className="text-base font-extrabold text-indigo-950 font-mono tracking-wide">{data.customerCode || data.customer_code}</div>
+                </div>
+                <div className="text-[10px] font-medium text-indigo-700 text-right">
+                  Auto-fills guest info across Lockers,<br />Costumes, POS & Room Check-In
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-5">

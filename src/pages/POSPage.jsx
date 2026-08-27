@@ -17,7 +17,8 @@ const paymentMethods = [
 ];
 
 export default function POSPage() {
-  const { posTables, bills, menuItems, checkedInBookings, dispatch, defaultRules, showToast } = useApp();
+  const { posTables, bills, menuItems, checkedInBookings, customers, dispatch, defaultRules, showToast } = useApp();
+  const [custSearch, setCustSearch] = useState('');
   const [activeArea, setActiveArea] = useState('Waterfront Dining');
   const [selectedTable, setSelectedTable] = useState(null);
   const [showOrderDrawer, setShowOrderDrawer] = useState(false);
@@ -227,6 +228,27 @@ export default function POSPage() {
 
           {table?.status === 'vacant' && (
             <div className="px-4 py-4 border-b border-slate-100 space-y-3">
+              <div className="bg-indigo-50/70 border border-indigo-100 rounded-lg p-2.5">
+                <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-1 block">Quick Auto-Sync Customer ID / Phone</label>
+                <input
+                  type="text"
+                  placeholder="Type CST-1001 or Mobile..."
+                  value={custSearch}
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    setCustSearch(q);
+                    const found = (customers || []).find(c =>
+                      (c.customerCode || '').toLowerCase() === q.toLowerCase() ||
+                      (c.phone || '').includes(q)
+                    );
+                    if (found) {
+                      setGuestName(found.name);
+                      setGuestPhone(found.phone);
+                    }
+                  }}
+                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-indigo-200 rounded-md outline-none text-indigo-950 font-medium"
+                />
+              </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Guest Name</label>
                 <input type="text" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Enter guest name..." className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />

@@ -90,6 +90,8 @@ export default function WaterparkCounterPage() {
         // Show invoice modal
         const billData = {
           id: res.data.booking_id,
+          customerCode: custCode,
+          customerPhone: guestPhone.trim(),
           tableNumber: null,
           area: 'Waterpark Counter',
           guestName: res.data.customer_name,
