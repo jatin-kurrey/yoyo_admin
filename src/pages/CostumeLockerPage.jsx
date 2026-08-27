@@ -257,7 +257,7 @@ export default function CostumeLockerPage() {
   const todayRentalRevenue = (issuesList || []).reduce((acc, i) => acc + (i.totalRentalFee || i.total_rental_fee || 0), 0);
 
   return (
-    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto min-h-screen">
+    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
