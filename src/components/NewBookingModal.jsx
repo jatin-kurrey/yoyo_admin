@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { X, User, Phone, Calendar } from 'lucide-react';
+import { X, User, Phone, Calendar, Search } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 
 export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
-  const { dispatch, roomCategories, pricingRates, dates, defaultRules } = useApp();
+  const { dispatch, customers, roomCategories, pricingRates, dates, defaultRules } = useApp();
+  const [custSearch, setCustSearch] = useState('');
 
   const normalize = (name) => {
     if (!name) return '';
@@ -138,6 +139,33 @@ export default function NewBookingModal({ onClose, prefillRoom, prefillDate }) {
         </div>
 
         <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
+          <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3">
+            <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-1 block">
+              Quick Auto-Sync Customer ID / Mobile Number
+            </label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" />
+              <input
+                type="text"
+                placeholder="Type Customer ID (CST-1001) or Mobile..."
+                value={custSearch}
+                onChange={(e) => {
+                  const q = e.target.value;
+                  setCustSearch(q);
+                  const found = (customers || []).find(c =>
+                    (c.customerCode || '').toLowerCase() === q.toLowerCase() ||
+                    (c.phone || '').includes(q) ||
+                    (c.name || '').toLowerCase().includes(q.toLowerCase())
+                  );
+                  if (found) {
+                    setForm(f => ({ ...f, guestName: found.name, mobile: found.phone }));
+                  }
+                }}
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-indigo-200 rounded-lg outline-none text-indigo-950 font-medium focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Full Name</label>

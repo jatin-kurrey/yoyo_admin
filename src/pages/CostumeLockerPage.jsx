@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 
 export default function CostumeLockerPage() {
-  const { customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
+  const { user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -51,14 +53,23 @@ export default function CostumeLockerPage() {
         pmsService.getCostumes(),
         pmsService.getWaterparkIssues()
       ]);
-      if (locRes.status === 'fulfilled' && locRes.value?.success) setLockersList(locRes.value.data || []);
-      else setLockersList(ctxLockers || []);
+      if (locRes.status === 'fulfilled' && locRes.value?.success && locRes.value?.data?.length > 0) {
+        setLockersList(locRes.value.data);
+      } else {
+        setLockersList(ctxLockers && ctxLockers.length > 0 ? ctxLockers : []);
+      }
 
-      if (cosRes.status === 'fulfilled' && cosRes.value?.success) setCostumesList(cosRes.value.data || []);
-      else setCostumesList(ctxCostumes || []);
+      if (cosRes.status === 'fulfilled' && cosRes.value?.success && cosRes.value?.data?.length > 0) {
+        setCostumesList(cosRes.value.data);
+      } else {
+        setCostumesList(ctxCostumes && ctxCostumes.length > 0 ? ctxCostumes : []);
+      }
 
-      if (issRes.status === 'fulfilled' && issRes.value?.success) setIssuesList(issRes.value.data || []);
-      else setIssuesList(ctxIssues || []);
+      if (issRes.status === 'fulfilled' && issRes.value?.success && issRes.value?.data?.length > 0) {
+        setIssuesList(issRes.value.data);
+      } else {
+        setIssuesList(ctxIssues && ctxIssues.length > 0 ? ctxIssues : []);
+      }
     } catch (e) {
       setLockersList(ctxLockers || []);
       setCostumesList(ctxCostumes || []);
@@ -274,20 +285,22 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setShowAddLockerModal(true)}
-            className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
-          >
-            <Plus size={14} className="text-indigo-600" /> Add Locker
-          </button>
-          <button
-            onClick={() => setShowAddCostumeModal(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-1.5"
-          >
-            <Shirt size={14} /> Add Costume Item
-          </button>
-        </div>
+        {isSuperAdmin && (
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowAddLockerModal(true)}
+              className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
+            >
+              <Plus size={14} className="text-indigo-600" /> Add Locker
+            </button>
+            <button
+              onClick={() => setShowAddCostumeModal(true)}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-1.5"
+            >
+              <Shirt size={14} /> Add Costume Item
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Live Stats Cards */}
