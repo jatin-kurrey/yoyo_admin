@@ -284,9 +284,9 @@ export default function CostumeLockerPage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto h-full flex flex-col">
+    <div className="h-[calc(100vh-1rem)] flex-1 bg-slate-50 p-4 md:p-5 overflow-hidden flex flex-col">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 shrink-0">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Costume & Locker Management</h1>
           <p className="text-xs text-slate-500">
@@ -336,9 +336,9 @@ export default function CostumeLockerPage() {
          Matches user screenshot with pixel perfection!
          ========================================================================= */}
       {currentMode === 'express' && (
-        <div className="flex-1 flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 items-stretch overflow-hidden">
           {/* Main Form Column (Left) */}
-          <div className="flex-1 space-y-6 w-full">
+          <div className="flex-1 min-h-0 flex flex-col space-y-3 overflow-y-auto pr-1">
             {/* Stepper Progress Bar */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center justify-between max-w-2xl mx-auto">
               <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
