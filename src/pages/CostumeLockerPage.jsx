@@ -1074,32 +1074,169 @@ export default function CostumeLockerPage() {
          MODE 3: 🚀 ENTERPRISE FULL SUITE (Master Registers & Catalog)
          ========================================================================= */}
       {currentMode === 'enterprise' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800">Enterprise Costume & Locker Management</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Master stock registers, audit logs, and catalog management.</p>
+        <div className="flex-1 min-h-0 flex flex-col space-y-4 overflow-y-auto pr-1">
+          {/* Executive KPI Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Rentals</span>
+              <div className="text-xl font-black text-slate-900">{activeIssues.length}</div>
+              <p className="text-xs text-slate-500">Deposit Held: <b className="text-amber-600 font-bold">₹{totalCautionHeld}</b></p>
             </div>
-            {isSuperAdmin && (
-              <div className="flex gap-2">
-                <button onClick={() => setShowAddLockerModal(true)} className="px-3.5 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer">
-                  + Add Locker
-                </button>
-                <button onClick={() => setShowAddCostumeModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold shadow-md cursor-pointer">
-                  + Add Costume
-                </button>
-              </div>
-            )}
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Revenue Today</span>
+              <div className="text-xl font-black text-emerald-600">₹{todayRentalRevenue}</div>
+              <p className="text-xs text-slate-500">Total Rental Collection</p>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Lockers</span>
+              <div className="text-xl font-black text-indigo-600">{(lockersList || []).length}</div>
+              <p className="text-xs text-slate-500">Available: <b className="text-emerald-600 font-bold">{(lockersList || []).filter(l => l.status !== 'assigned' && l.status !== 'occupied').length}</b></p>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Swimwear Items</span>
+              <div className="text-xl font-black text-blue-600">{(costumesList || []).length} Types</div>
+              <p className="text-xs text-slate-500">Total Stock Units: <b className="text-slate-800 font-bold">{(costumesList || []).reduce((acc, c) => acc + (c.totalStock || 30), 0)}</b></p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-              <h4 className="font-bold text-xs text-slate-900">Active Issues ({activeIssues.length})</h4>
-              <p className="text-xs text-slate-500">Caution Deposits Held: <b className="text-amber-600">₹{totalCautionHeld}</b></p>
+          {/* Active Rental Audit Master Register */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Active Rental & Deposit Audit Register</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Real-time tracking of active locker issues & caution deposit returns.</p>
+              </div>
+              <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">
+                {activeIssues.length} Active Rentals
+              </span>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-              <h4 className="font-bold text-xs text-slate-900">Revenue Today</h4>
-              <p className="text-xs text-slate-500">Rental Revenue: <b className="text-emerald-600">₹{todayRentalRevenue}</b></p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
+                  <tr>
+                    <th className="pb-3">Guest Name</th>
+                    <th className="pb-3">Customer ID</th>
+                    <th className="pb-3">Room / Wristband</th>
+                    <th className="pb-3 text-center">Locker No</th>
+                    <th className="pb-3 text-right">Rental Fee</th>
+                    <th className="pb-3 text-right">Deposit Held</th>
+                    <th className="pb-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {activeIssues.map((issue) => (
+                    <tr key={issue.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 font-bold text-slate-900">{issue.guestName || issue.guest_name}</td>
+                      <td className="py-3 font-mono font-bold text-indigo-600">{issue.customerCode}</td>
+                      <td className="py-3 text-slate-600">Room {issue.roomNumber || '101'} • {issue.wristbandId || 'W-7854'}</td>
+                      <td className="py-3 text-center font-extrabold text-slate-900">{issue.lockerNumber || 'L-101'}</td>
+                      <td className="py-3 text-right font-bold text-emerald-600">₹{issue.totalRentalFee || 100}</td>
+                      <td className="py-3 text-right font-black text-amber-600">₹{issue.totalDepositHeld || 100}</td>
+                      <td className="py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReturnModalIssue(issue);
+                            setDamageFine(0);
+                            setReturnNotes('');
+                          }}
+                          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <RotateCcw size={13} /> Refund Deposit ₹{issue.totalDepositHeld || 100}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {activeIssues.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="py-8 text-center text-slate-400 font-semibold">
+                        No active rentals currently pending return.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Master Locker & Costume Catalog Registers */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Locker Master */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-extrabold text-slate-900">Locker Master Directory</h3>
+                {isSuperAdmin && (
+                  <button onClick={() => setShowAddLockerModal(true)} className="px-3 py-1 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
+                    + Add Locker
+                  </button>
+                )}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
+                    <tr>
+                      <th className="pb-2">Locker No</th>
+                      <th className="pb-2">Zone</th>
+                      <th className="pb-2 text-right">Rent</th>
+                      <th className="pb-2 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(lockersList || []).map((l) => (
+                      <tr key={l.id || l.lockerNumber} className="hover:bg-slate-50 transition">
+                        <td className="py-2.5 font-mono font-bold text-slate-900">{l.lockerNumber}</td>
+                        <td className="py-2.5 text-slate-600 text-[11px]">{l.zone || 'Men Area'}</td>
+                        <td className="py-2.5 text-right font-bold text-slate-800">₹{l.rentalFee + l.securityDeposit}</td>
+                        <td className="py-2.5 text-right">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${l.status === 'assigned' || l.status === 'occupied' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {l.status === 'assigned' || l.status === 'occupied' ? 'Occupied' : 'Available'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Costume Master */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-extrabold text-slate-900">Swimwear Stock Catalog</h3>
+                {isSuperAdmin && (
+                  <button onClick={() => setShowAddCostumeModal(true)} className="px-3 py-1 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
+                    + Add Costume
+                  </button>
+                )}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
+                    <tr>
+                      <th className="pb-2">Code</th>
+                      <th className="pb-2">Item Name</th>
+                      <th className="pb-2 text-center">Stock</th>
+                      <th className="pb-2 text-right">Fee</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(costumesList || []).map((c) => (
+                      <tr key={c.id || c.code} className="hover:bg-slate-50 transition">
+                        <td className="py-2.5 font-mono font-bold text-slate-900">{c.code}</td>
+                        <td className="py-2.5 font-bold text-indigo-700">{c.name}</td>
+                        <td className="py-2.5 text-center font-bold text-emerald-600">{c.totalStock || 30}</td>
+                        <td className="py-2.5 text-right font-black text-slate-900">₹{c.rentalFee}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
