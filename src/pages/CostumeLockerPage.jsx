@@ -1075,6 +1075,143 @@ export default function CostumeLockerPage() {
          ========================================================================= */}
       {currentMode === 'enterprise' && (
         <div className="flex-1 min-h-0 flex flex-col space-y-4 overflow-y-auto pr-1">
+          {/* Operational Counter Issue Terminal (Selling & Renting POS) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 shrink-0">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <Zap size={16} className="text-emerald-600" /> Issue & Rent Terminal (Counter POS)
+                </h3>
+                <p className="text-xs text-slate-500">Search customer, pick locker, add costumes & collect payment</p>
+              </div>
+              {selectedCustomer && (
+                <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                  Guest Loaded: {selectedCustomer.name} ({selectedCustomer.customerCode})
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Step 1: Customer Lookup */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">1. Customer Lookup</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input
+                      type="text"
+                      placeholder="Search ID (CST-1001), Mobile, Room..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
+                          else if (searchQuery.trim()) {
+                            handleSelectCustomer({
+                              customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                              name: searchQuery.trim(),
+                              phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                              roomNumber: '101'
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 text-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
+                      else if (searchQuery.trim()) {
+                        handleSelectCustomer({
+                          customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                          name: searchQuery.trim(),
+                          phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                          roomNumber: '101'
+                        });
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                  >
+                    Search
+                  </button>
+                </div>
+                {selectedCustomer && (
+                  <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-xs flex justify-between items-center">
+                    <div>
+                      <b className="text-slate-900">{selectedCustomer.name}</b>
+                      <p className="text-[10px] text-emerald-700 font-mono">{selectedCustomer.customerCode} • Room {selectedCustomer.roomNumber || '101'}</p>
+                    </div>
+                    <button onClick={() => setSelectedCustomer(null)} className="text-slate-400 hover:text-slate-700"><X size={14} /></button>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Select Locker */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">2. Select Locker</label>
+                <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                  {(lockersList || []).map((l) => {
+                    const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                    const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
+                    return (
+                      <button
+                        key={l.id || l.lockerNumber}
+                        type="button"
+                        disabled={isAssigned}
+                        onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
+                        className={`p-2 rounded-xl border text-center transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 font-bold'
+                            : isAssigned
+                            ? 'bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-60'
+                            : 'bg-slate-50 border-slate-200 text-slate-800 font-semibold'
+                        }`}
+                      >
+                        <div className="text-xs font-mono font-black">{l.lockerNumber}</div>
+                        <div className="text-[10px] text-slate-600">₹{l.rentalFee + l.securityDeposit}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 3: Add Costumes & Issue */}
+              <div className="space-y-2 flex flex-col justify-between">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">3. Add Swimwear</label>
+                  <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                    {(costumesList || []).map((c) => {
+                      const costumeId = c.id || c.code;
+                      const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
+                      const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
+                      return (
+                        <div key={c.id || c.code} className="flex justify-between items-center p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                          <span className="text-[11px] font-semibold text-slate-800 truncate max-w-[120px]">{c.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))} className="w-4 h-4 rounded bg-white text-slate-700 font-bold border flex items-center justify-center cursor-pointer">-</button>
+                            <span className="font-bold text-[11px] w-3 text-center">{qty}</span>
+                            <button onClick={() => handleUpdateCostumeQty(c, qty + 1)} className="w-4 h-4 rounded bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer">+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleIssueSubmit}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                >
+                  <Printer size={14} /> Issue Locker & Receipt (Total: ₹{grandTotalPaid})
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Executive KPI Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-1">
