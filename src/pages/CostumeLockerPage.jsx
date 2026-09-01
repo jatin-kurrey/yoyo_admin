@@ -9,6 +9,7 @@ import {
 
 export default function CostumeLockerPage() {
   const { defaultRules, user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin' || !user?.role;
   const rawMode = defaultRules?.costumeLockerMode || 'express';
   let currentMode = 'express';
   if (rawMode === 'tabs') currentMode = 'tabs';
