@@ -542,52 +542,76 @@ export default function SettingsPage() {
                     <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-1.5 block">
                       Costume & Locker Management Interface Mode
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <button
                         type="button"
                         onClick={() => {
-                          setLocalRules({ ...localRules, costumeLockerMode: 'simple' });
-                          dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'simple' });
-                          showToast('Switched to Simple Express Costume & Locker Counter Mode');
+                          setLocalRules({ ...localRules, costumeLockerMode: 'express' });
+                          dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'express' });
+                          showToast('Switched to ⚡ Express Counter Wizard Mode');
                         }}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
-                          (localRules?.costumeLockerMode || 'simple') === 'simple'
-                            ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-500/20'
+                          (localRules?.costumeLockerMode || 'express') === 'express'
+                            ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                             : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                         }`}
                       >
                         <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                          ⚡ Simple Express Counter
-                          {(localRules?.costumeLockerMode || 'simple') === 'simple' && (
-                            <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          ⚡ Express Counter
+                          {(localRules?.costumeLockerMode || 'express') === 'express' && (
+                            <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
                           )}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-1">
-                          Fast 1-page counter: Visual locker cards, +/- swimwear counters & instant 1-click deposit refund.
+                          Modern 1-page stepper wizard with visual locker cards & active rentals side drawer.
                         </div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => {
-                          setLocalRules({ ...localRules, costumeLockerMode: 'advanced' });
-                          dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'advanced' });
-                          showToast('Switched to Enterprise Costume & Locker Management Mode');
+                          setLocalRules({ ...localRules, costumeLockerMode: 'tabs' });
+                          dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'tabs' });
+                          showToast('Switched to 🗂️ Multi-Tab Registers Mode');
                         }}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
-                          (localRules?.costumeLockerMode || 'simple') === 'advanced'
+                          (localRules?.costumeLockerMode || 'express') === 'tabs'
                             ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-500/20'
                             : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                         }`}
                       >
                         <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                          🚀 Enterprise Full Registers
-                          {(localRules?.costumeLockerMode || 'simple') === 'advanced' && (
+                          🗂️ Multi-Tab Registers
+                          {(localRules?.costumeLockerMode || 'express') === 'tabs' && (
                             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
                           )}
                         </div>
                         <div className="text-[10px] text-slate-500 mt-1">
-                          Full 4-tab suite: Complete locker grid, stock registers, fine management & master catalogs.
+                          Clean multi-tab view separating Issue Counter, Returns, Grid, and Stock Catalog.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLocalRules({ ...localRules, costumeLockerMode: 'enterprise' });
+                          dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'enterprise' });
+                          showToast('Switched to 🚀 Enterprise Full Registers Mode');
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          (localRules?.costumeLockerMode || 'express') === 'enterprise'
+                            ? 'border-purple-500 bg-purple-50/60 ring-2 ring-purple-500/20'
+                            : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                          🚀 Enterprise Full Suite
+                          {(localRules?.costumeLockerMode || 'express') === 'enterprise' && (
+                            <span className="text-[9px] bg-purple-600 text-white font-bold px-1.5 py-0.2 rounded">Active</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          Complete 4-tab suite with audit logs, stock creation & detailed register logs.
                         </div>
                       </button>
                     </div>

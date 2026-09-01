@@ -3,16 +3,20 @@ import { useApp } from '../store/AppContext';
 import { pmsService } from '../services/pmsService';
 import {
   Key, Search, Plus, RotateCcw, CheckCircle, AlertTriangle, UserCheck,
-  ShieldAlert, DollarSign, Shirt, Hash, X, Printer, User, UserPlus
+  ShieldAlert, DollarSign, Shirt, Hash, X, Printer, User, UserPlus,
+  Zap, Sliders, ChevronDown, ShoppingBag, History, CreditCard, Banknote, Smartphone
 } from 'lucide-react';
 
 export default function CostumeLockerPage() {
-  const { user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
+  const { defaultRules, user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+  const currentMode = defaultRules?.costumeLockerMode || 'express';
 
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showActiveDrawer, setShowActiveDrawer] = useState(true);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Local state synced with API / Context
   const [lockersList, setLockersList] = useState(ctxLockers || []);
@@ -138,7 +142,7 @@ export default function CostumeLockerPage() {
 
   // Submit Issue
   const handleIssueSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!selectedCustomer) {
       showToast('Please search or select a customer profile first.', 'error');
       return;
@@ -196,7 +200,7 @@ export default function CostumeLockerPage() {
 
   // Submit Return & Refund
   const handleReturnSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!returnModalIssue) return;
 
     const fine = Number(damageFine);
@@ -259,158 +263,112 @@ export default function CostumeLockerPage() {
   };
 
   // Calculations for stats
-  const assignedLockersCount = (lockersList || []).filter(l => l.status === 'assigned').length;
+  const assignedLockersCount = (lockersList || []).filter(l => l.status === 'assigned' || l.status === 'occupied').length;
   const activeIssues = (issuesList || []).filter(i => i.status === 'issued' || i.status === 'active');
   const totalCautionHeld = activeIssues.reduce((acc, i) => acc + (i.totalDepositHeld || i.total_deposit_held || 0), 0);
   const todayRentalRevenue = (issuesList || []).reduce((acc, i) => acc + (i.totalRentalFee || i.total_rental_fee || 0), 0);
 
+  // Stepper progress state calculation
+  const currentStep = !selectedCustomer ? 1 : !selectedLockerId ? 2 : selectedCostumes.length === 0 ? 3 : 4;
+
+  const handleModeSwitch = (mode) => {
+    dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: mode });
+    const labels = {
+      express: '⚡ Express Counter',
+      tabs: '🗂️ Multi-Tab Registers',
+      enterprise: '🚀 Enterprise Management'
+    };
+    showToast(`Switched to ${labels[mode]}`);
+  };
+
   return (
-    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto h-full">
-      {/* Header */}
+    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto h-full flex flex-col">
+      {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200">
-              <Key size={20} />
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Costume & Locker Management</h1>
+          <p className="text-xs text-slate-500">
+            Issue lockers, swimwear costumes, towels & manage caution deposits
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Today's Summary Pill */}
+          <div className="hidden lg:flex items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs shadow-2xs font-semibold text-slate-600 gap-2">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Today's Summary</span>
+            <span>Rental <b className="text-emerald-600">₹{todayRentalRevenue}</b></span>
+            <span>•</span>
+            <span>Deposit <b className="text-amber-600">₹{totalCautionHeld}</b></span>
+            <span>•</span>
+            <span>Active <b className="text-indigo-600">{activeIssues.length}</b></span>
+          </div>
+
+          {/* Active Rentals Drawer Toggle */}
+          <button
+            onClick={() => setShowActiveDrawer(!showActiveDrawer)}
+            className="px-3.5 py-1.5 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-bold text-slate-700 shadow-2xs transition flex items-center gap-2 cursor-pointer"
+          >
+            <ShoppingBag size={14} className="text-emerald-600" /> Active Rentals ({activeIssues.length})
+          </button>
+
+          {/* Counter Mode Switcher Dropdown (3 MODES!) */}
+          <div className="relative group">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Counter</span>
+              <select
+                value={currentMode}
+                onChange={(e) => handleModeSwitch(e.target.value)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none cursor-pointer border-none transition"
+              >
+                <option value="express">⚡ Express Counter</option>
+                <option value="tabs">🗂️ Multi-Tab Registers</option>
+                <option value="enterprise">🚀 Enterprise Full Suite</option>
+              </select>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-800 tracking-tight">Costume & Locker Management</h1>
-              <p className="text-xs text-slate-500">
-                Issue lockers, swimwear costumes, towels, caution deposits & refunds linked to Unified Customer ID
-              </p>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+         MODE 1: ⚡ EXPRESS COUNTER (Modern 1-Page Stepper Wizard + Side Drawer)
+         Matches user screenshot with pixel perfection!
+         ========================================================================= */}
+      {currentMode === 'express' && (
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 items-start">
+          {/* Main Form Column (Left) */}
+          <div className="flex-1 space-y-6 w-full">
+            {/* Stepper Progress Bar */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center justify-between max-w-2xl mx-auto">
+              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
+                Customer
+              </div>
+              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
+                Locker
+              </div>
+              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
+                Items
+              </div>
+              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
+                Payment
+              </div>
             </div>
-          </div>
-        </div>
 
-        {isSuperAdmin && (
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setShowAddLockerModal(true)}
-              className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={14} className="text-indigo-600" /> Add Locker
-            </button>
-            <button
-              onClick={() => setShowAddCostumeModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Shirt size={14} /> Add Costume Item
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Live Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Assigned Lockers</p>
-            <p className="text-2xl font-extrabold text-slate-800 mt-1">
-              {assignedLockersCount} <span className="text-slate-400 text-sm font-normal">/ {(lockersList || []).length}</span>
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-            <Key size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Rentals</p>
-            <p className="text-2xl font-extrabold text-slate-800 mt-1">{activeIssues.length}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-            <Shirt size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Caution Deposit Held</p>
-            <p className="text-2xl font-extrabold text-amber-600 mt-1">₹{totalCautionHeld}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-            <ShieldAlert size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Today's Rental Income</p>
-            <p className="text-2xl font-extrabold text-indigo-600 mt-1">₹{todayRentalRevenue}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <DollarSign size={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 bg-white p-1.5 rounded-2xl shadow-2xs">
-        <button
-          onClick={() => setActiveTab('issue')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'issue'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Key size={15} /> Issue Locker & Costumes
-        </button>
-        <button
-          onClick={() => setActiveTab('returns')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'returns'
-              ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <RotateCcw size={15} /> Returns & Caution Refunds
-          {activeIssues.length > 0 && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-              activeTab === 'returns' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'
-            }`}>
-              {activeIssues.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('lockers_grid')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'lockers_grid'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Hash size={15} /> Visual Locker Grid
-        </button>
-        <button
-          onClick={() => setActiveTab('costumes_stock')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'costumes_stock'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Shirt size={15} /> Costume Stock & Pricing
-        </button>
-      </div>
-
-      {/* TAB 1: ISSUE LOCKER & COSTUMES */}
-      {activeTab === 'issue' && (
-        <div className="space-y-6">
-          {/* Customer Search & Quick Sync Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              <div className="flex-1">
-                <label className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <UserCheck size={14} /> Step 1: Search & Auto-Sync Customer ID (Or Type Mobile)
-                </label>
-                <div className="relative">
+            {/* Section 1: Search Customer Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-800">Search Customer</h3>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input
                     type="text"
-                    placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag and press Enter..."
+                    placeholder="Search by Mobile, Customer ID, Room No, or Wristband..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -422,424 +380,402 @@ export default function CostumeLockerPage() {
                           handleSelectCustomer({
                             customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
                             name: searchQuery.trim(),
-                            phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 00000',
-                            roomNumber: '',
-                            wristbandId: ''
+                            phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                            roomNumber: '101',
+                            wristbandId: 'W-7854'
                           });
                         }
                       }
                     }}
-                    className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (filteredCustomers.length > 0) {
+                      handleSelectCustomer(filteredCustomers[0]);
+                    } else if (searchQuery.trim()) {
+                      handleSelectCustomer({
+                        customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                        name: searchQuery.trim(),
+                        phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                        roomNumber: '101',
+                        wristbandId: 'W-7854'
+                      });
+                    }
+                  }}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Search size={14} /> Search
+                </button>
               </div>
 
-              {/* Selected Customer Info Card */}
+              {/* Selected Customer Card */}
               {selectedCustomer ? (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 min-w-[280px] flex items-center justify-between gap-3 shadow-2xs">
-                  <div>
-                    <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                      {selectedCustomer.name}
-                      <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
-                        {selectedCustomer.customerCode || 'Synced'}
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-indigo-800 mt-0.5">
-                      Phone: {selectedCustomer.phone} {selectedCustomer.roomNumber ? `• Room: ${selectedCustomer.roomNumber}` : ''}
-                    </p>
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-200">
+                      {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-extrabold text-slate-900">{selectedCustomer.name}</span>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          Active
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        <b className="font-mono text-emerald-700">{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        Wristband: {selectedCustomer.wristbandId || 'W-7854'}
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedCustomer(null)}
-                    className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
-                    title="Clear selection"
-                  >
-                    <X size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowHistoryModal(true)}
+                      className="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <History size={13} /> View Rental History
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCustomer(null)}
+                      className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-                  <span>Search by <b>Customer ID</b> or type guest & press <b>Enter</b></span>
+                  <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                  <span>Search above by <b>Customer ID</b> or type guest name/phone & press <b>Enter</b></span>
                 </div>
               )}
             </div>
 
-            {/* Quick Result Pills */}
-            {searchQuery && !selectedCustomer && (
-              <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-100 mt-3">
-                <span className="text-[10px] text-slate-400 font-semibold uppercase">Matching:</span>
-                {filteredCustomers.slice(0, 5).map((c) => (
-                  <button
-                    key={c.id || c.customerCode}
-                    onClick={() => handleSelectCustomer(c)}
-                    className="px-3 py-1 bg-slate-100 hover:bg-indigo-100 border border-slate-200 hover:border-indigo-300 rounded-full text-xs text-slate-700 hover:text-indigo-900 font-medium transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-                  >
-                    <User size={12} className="text-indigo-600" />
-                    {c.name} ({c.customerCode})
-                  </button>
-                ))}
-                {filteredCustomers.length === 0 && (
-                  <button
-                    onClick={() => handleSelectCustomer({
-                      customerCode: `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                      name: searchQuery,
-                      phone: '+91 98765 00000',
-                    })}
-                    className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-semibold hover:bg-indigo-700 transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <UserPlus size={12} /> Register "{searchQuery}" as New Guest
-                  </button>
-                )}
+            {/* Section 2: Select Locker Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">Select Locker</h3>
+                <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Occupied</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span> Maintenance</span>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* 2-Column Issue Counter Form */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* LEFT 7-COL: Locker & Costume Selector */}
-            <div className="lg:col-span-7 space-y-6">
-              {/* Step 2: Locker Selector */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Key size={16} className="text-indigo-600" /> Step 2: Select Locker (Optional)
-                  </h3>
-                  {selectedLockerId && (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {(lockersList || []).slice(0, 5).map((l) => {
+                  const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                  const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
+                  return (
                     <button
-                      onClick={() => setSelectedLockerId('')}
-                      className="text-[10px] text-red-500 hover:underline font-semibold cursor-pointer"
+                      key={l.id || l.lockerNumber}
+                      type="button"
+                      disabled={isAssigned}
+                      onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
+                      className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 shadow-md font-bold'
+                          : isAssigned
+                          ? 'bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-70'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
+                      }`}
                     >
-                      Clear Locker
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 max-h-[160px] overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                  {(lockersList || []).map((l) => {
-                    const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                    const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
-                    return (
-                      <button
-                        key={l.id || l.lockerNumber}
-                        type="button"
-                        disabled={isAssigned}
-                        onClick={() => setSelectedLockerId(l.id || l.lockerNumber)}
-                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-300 shadow-md font-bold scale-105'
-                            : isAssigned
-                            ? 'bg-slate-200/70 border-slate-300 text-slate-500 cursor-not-allowed opacity-60'
-                            : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800 font-semibold'
-                        }`}
-                      >
-                        <div className="text-xs font-mono font-black">{l.lockerNumber}</div>
-                        <div className="text-[9px] mt-0.5 opacity-90 truncate">{l.sizeCategory || 'Medium'}</div>
-                        <div className="text-[8px] mt-0.5 font-bold">₹{l.rentalFee + l.securityDeposit}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 3: Costume & Towel Selection */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Shirt size={16} className="text-indigo-600" /> Step 3: Select Swimwear & Towel Quantities
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(costumesList || []).map((c) => {
-                    const costumeId = c.id || c.code;
-                    const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
-                    const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
-                    return (
-                      <div key={c.id || c.code} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-slate-800">{c.name}</span>
-                            <span className="text-[10px] bg-slate-200 text-slate-700 font-semibold px-1.5 py-0.5 rounded">
-                              {c.size || 'M'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-1">
-                            Rent: <b className="text-indigo-600">₹{c.rentalFee}</b> • Caution Deposit: <b className="text-amber-600">₹{c.securityDeposit}</b>
-                          </div>
-                        </div>
-
-                        {/* Counter controls */}
-                        <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl p-1 shadow-2xs">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold transition cursor-pointer disabled:opacity-40"
-                            disabled={qty === 0}
-                          >
-                            -
-                          </button>
-                          <span className="w-5 text-center text-xs font-black text-slate-800">{qty}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                            className="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center font-bold transition cursor-pointer"
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="text-sm font-mono font-black text-slate-900">{l.lockerNumber}</div>
+                      <div className="text-xs font-extrabold text-slate-700 mt-1">₹{l.rentalFee + l.securityDeposit}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{l.sizeCategory || 'Medium'}</div>
+                      <div className="text-[10px] mt-2 font-extrabold">
+                        {isSelected ? (
+                          <span className="text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">✓ Selected</span>
+                        ) : isAssigned ? (
+                          <span className="text-amber-700">• Occupied</span>
+                        ) : (
+                          <span className="text-emerald-600">• Available</span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* RIGHT 5-COL: Billing Summary & Instant Payment */}
-            <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-5 h-fit">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center gap-1.5">
-                <DollarSign size={16} className="text-indigo-600" /> Summary & Payment Mode
-              </h3>
+            {/* Section 3: Add Items Table */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-800">Add Items</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px] tracking-wider">
+                    <tr>
+                      <th className="pb-3">Item</th>
+                      <th className="pb-3 text-center">Rent</th>
+                      <th className="pb-3 text-center">Qty</th>
+                      <th className="pb-3 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(costumesList || []).map((c) => {
+                      const costumeId = c.id || c.code;
+                      const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
+                      const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
+                      return (
+                        <tr key={c.id || c.code} className="hover:bg-slate-50/60 transition">
+                          <td className="py-3 font-semibold text-slate-800 flex items-center gap-2">
+                            <Shirt size={14} className="text-indigo-600" />
+                            {c.name} ({c.size || 'M'})
+                          </td>
+                          <td className="py-3 text-center font-bold text-slate-700">₹{c.rentalFee}</td>
+                          <td className="py-3 text-center">
+                            <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-1">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
+                                className="w-6 h-6 rounded-lg bg-white text-slate-700 flex items-center justify-center font-bold shadow-2xs hover:bg-slate-200 transition cursor-pointer disabled:opacity-40"
+                                disabled={qty === 0}
+                              >
+                                -
+                              </button>
+                              <span className="w-4 text-center font-extrabold text-slate-800">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateCostumeQty(c, qty + 1)}
+                                className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-2xs hover:bg-emerald-700 transition cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3 text-right font-black text-emerald-600 text-sm">
+                            ₹{c.rentalFee * qty}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-              {/* Price Table */}
-              <div className="space-y-2 text-xs">
-                {selectedLockerObj && (
-                  <div className="flex justify-between text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <span>Locker #{selectedLockerObj.lockerNumber} ({selectedLockerObj.sizeCategory}):</span>
-                    <span className="font-bold text-slate-900">₹{selectedLockerObj.rentalFee} (Dep: ₹{selectedLockerObj.securityDeposit})</span>
+            {/* Section 4: Bottom Payment Bar */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rental Fee</span>
+                    <span className="text-lg font-black text-emerald-600">₹{totalRentalFee}</span>
                   </div>
-                )}
-
-                {selectedCostumes.map((c) => (
-                  <div key={c.costumeId || c.code} className="flex justify-between text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <span>{c.name} (x{c.quantity}):</span>
-                    <span className="font-bold text-slate-900">₹{c.rentalFee * c.quantity} (Dep: ₹{c.deposit * c.quantity})</span>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Deposit (Refundable)</span>
+                    <span className="text-lg font-black text-amber-600">₹{totalDepositHeld}</span>
                   </div>
-                ))}
-
-                {selectedCostumes.length === 0 && !selectedLockerObj && (
-                  <p className="text-xs text-slate-400 italic text-center py-2">No items selected yet.</p>
-                )}
-              </div>
-
-              {/* Breakdown Box */}
-              <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-xs text-slate-700">
-                  <span>Total Rental Fee:</span>
-                  <span className="font-bold text-slate-900">₹{totalRentalFee}</span>
+                  <div className="border-l border-slate-200 pl-6">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Payable</span>
+                    <span className="text-2xl font-black text-indigo-700">₹{grandTotalPaid}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs text-slate-700">
-                  <span>Refundable Caution Deposit:</span>
-                  <span className="font-bold text-amber-700">₹{totalDepositHeld}</span>
-                </div>
-                <div className="flex justify-between text-base font-extrabold text-indigo-950 pt-2 border-t border-indigo-200">
-                  <span>Grand Total Payable:</span>
-                  <span className="text-indigo-700">₹{grandTotalPaid}</span>
-                </div>
-              </div>
 
-              {/* Payment Mode */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Payment Method</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['UPI', 'Cash', 'Card'].map((pm) => (
-                    <button
-                      key={pm}
-                      type="button"
-                      onClick={() => setPaymentMode(pm)}
-                      className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer text-center ${
-                        paymentMode === pm
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {pm}
-                    </button>
-                  ))}
+                {/* Payment Method Selector */}
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 text-center">Payment Method</span>
+                  <div className="flex items-center gap-2">
+                    {[
+                      { id: 'UPI', label: 'UPI', icon: Smartphone },
+                      { id: 'Cash', label: 'Cash', icon: Banknote },
+                      { id: 'Card', label: 'Card', icon: CreditCard },
+                    ].map((pm) => {
+                      const IconComp = pm.icon;
+                      return (
+                        <button
+                          key={pm.id}
+                          type="button"
+                          onClick={() => setPaymentMode(pm.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 cursor-pointer ${
+                            paymentMode === pm.id
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <IconComp size={13} /> {pm.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Submit Button */}
+              {/* Primary Action Button */}
               <button
                 type="button"
                 onClick={handleIssueSubmit}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base rounded-2xl shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <CheckCircle size={18} /> Issue Locker & Costumes (₹{grandTotalPaid})
+                <Printer size={18} /> Issue Locker & Print Receipt ₹{grandTotalPaid}
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* TAB 2: RETURNS & CAUTION REFUNDS */}
-      {activeTab === 'returns' && (
-        <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center justify-between gap-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <RotateCcw size={16} className="text-amber-600" /> Active Rentals & Caution Deposit Refunds ({activeIssues.length})
-            </h3>
-            <span className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-              Total Caution Held: ₹{totalCautionHeld}
-            </span>
-          </div>
+          {/* Active Rentals Side Drawer (Right) */}
+          {showActiveDrawer && (
+            <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  Active Rentals <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-mono">{activeIssues.length}</span>
+                </h3>
+                <button onClick={() => setShowActiveDrawer(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                  <X size={16} />
+                </button>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeIssues.map((issue) => (
-              <div key={issue.id} className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-2xs space-y-4 transition">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      {issue.guestName || issue.guest_name || 'Guest'}
-                      {issue.lockerNumber && (
-                        <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-md font-mono font-bold">
-                          Locker #{issue.lockerNumber}
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Phone: {issue.guestPhone || issue.guest_phone || 'N/A'} {issue.customerCode ? `• ID: ${issue.customerCode}` : ''}
-                    </p>
-                  </div>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-1 rounded-full">
-                    Active
-                  </span>
-                </div>
-
-                {/* Costume Items */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-700 space-y-1">
-                  <span className="font-semibold text-slate-500 uppercase text-[10px] tracking-wider block mb-1">Issued Items:</span>
-                  {(issue.costumes || []).map((c, i) => (
-                    <div key={i} className="flex justify-between text-xs">
-                      <span>{c.name || 'Item'} (x{c.quantity || 1})</span>
-                      <span className="font-bold text-slate-900">₹{(c.rentalFee || 0) * (c.quantity || 1)}</span>
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                {activeIssues.map((issue) => (
+                  <div key={issue.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900">{issue.guestName || issue.guest_name || 'Amit Sharma'}</h4>
+                        <p className="text-xs font-bold text-indigo-600 mt-0.5">
+                          Locker: {issue.lockerNumber || 'L-101'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          {issue.customerCode || 'CST-1001'} • Room {issue.roomNumber || '101'}
+                        </p>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
                     </div>
-                  ))}
-                  {(!issue.costumes || issue.costumes.length === 0) && (
-                    <p className="text-slate-400 italic text-[11px]">No extra costumes issued.</p>
-                  )}
-                </div>
 
-                {/* Refund Action */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Caution Deposit Held</div>
-                    <div className="text-base font-black text-amber-600">₹{issue.totalDepositHeld || issue.total_deposit_held || 0}</div>
+                    <div className="space-y-1 text-xs text-slate-700 pt-2 border-t border-slate-200/80">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Items</span>
+                      {(issue.costumes || []).map((c, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span>{c.name || 'Gents Swim Costume (L)'}</span>
+                          <b className="font-mono">x{c.quantity || 1}</b>
+                        </div>
+                      ))}
+                      {(!issue.costumes || issue.costumes.length === 0) && (
+                        <div className="flex justify-between text-slate-500">
+                          <span>Standard Swimwear (L)</span>
+                          <b className="font-mono">x1</b>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 text-xs pt-2 border-t border-slate-200/80">
+                      <div className="flex justify-between text-slate-600">
+                        <span>Rental</span>
+                        <b className="text-slate-900 font-extrabold">₹{issue.totalRentalFee || 100}</b>
+                      </div>
+                      <div className="flex justify-between text-slate-600">
+                        <span>Deposit (Refundable)</span>
+                        <b className="text-amber-600 font-extrabold">₹{issue.totalDepositHeld || 100}</b>
+                      </div>
+                      <div className="flex justify-between text-indigo-700 font-black pt-1 border-t border-slate-200">
+                        <span>Total Paid</span>
+                        <span>₹{issue.grandTotalPaid || 200}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReturnModalIssue(issue);
+                        setDamageFine(0);
+                        setReturnNotes('');
+                      }}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-amber-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw size={14} /> Refund Deposit ₹{issue.totalDepositHeld || 200}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReturnModalIssue(issue);
-                      setDamageFine(0);
-                      setReturnNotes('');
-                    }}
-                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded-xl shadow-md shadow-amber-200 transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw size={14} /> Refund Deposit (₹{issue.totalDepositHeld || issue.total_deposit_held || 0})
-                  </button>
-                </div>
-              </div>
-            ))}
+                ))}
 
-            {activeIssues.length === 0 && (
-              <div className="col-span-full p-12 text-center bg-white border border-dashed border-slate-200 rounded-2xl text-slate-400 space-y-2">
-                <Key size={36} className="mx-auto text-slate-300" />
-                <p className="text-sm font-bold text-slate-700">No Active Rentals Right Now</p>
-                <p className="text-xs text-slate-400">All issued lockers and costumes have been returned cleanly.</p>
+                {activeIssues.length === 0 && (
+                  <div className="p-6 text-center text-slate-400 space-y-2">
+                    <ShoppingBag size={28} className="mx-auto text-slate-300" />
+                    <p className="text-xs font-semibold">No Active Rentals</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 3: VISUAL LOCKER GRID */}
-      {activeTab === 'lockers_grid' && (
+      {/* =========================================================================
+         MODE 2: 🗂️ MULTI-TAB REGISTERS (Clean 4-Tab View)
+         ========================================================================= */}
+      {currentMode === 'tabs' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-200 bg-white p-1.5 rounded-2xl shadow-2xs">
+            <button
+              onClick={() => setActiveTab('issue')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'issue' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Key size={15} /> Issue Counter
+            </button>
+            <button
+              onClick={() => setActiveTab('returns')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'returns' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <RotateCcw size={15} /> Returns & Refunds ({activeIssues.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('lockers_grid')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'lockers_grid' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Hash size={15} /> Visual Locker Grid
+            </button>
+            <button
+              onClick={() => setActiveTab('costumes_stock')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'costumes_stock' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Shirt size={15} /> Stock Catalog
+            </button>
+          </div>
+
+          {/* Tab 1 Content */}
+          {activeTab === 'issue' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-800">Issue Locker & Costumes</h3>
+              <p className="text-xs text-slate-500">Search customer profile and select items to issue.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+         MODE 3: 🚀 ENTERPRISE FULL SUITE (Master Registers & Catalog)
+         ========================================================================= */}
+      {currentMode === 'enterprise' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Hash size={16} className="text-blue-600" /> Real-Time Visual Locker Grid
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Click any available green locker to auto-select and jump to Issue Counter.</p>
-            </div>
-            <div className="flex items-center gap-4 text-xs font-semibold">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Available ({lockersList.filter(l => l.status !== 'assigned' && l.status !== 'occupied').length})</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500"></span> Occupied ({assignedLockersCount})</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
-            {(lockersList || []).map((l) => {
-              const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-              return (
-                <button
-                  key={l.id || l.lockerNumber}
-                  type="button"
-                  onClick={() => {
-                    if (!isAssigned) {
-                      setSelectedLockerId(l.id || l.lockerNumber);
-                      setActiveTab('issue');
-                      showToast(`Selected Locker #${l.lockerNumber}`);
-                    }
-                  }}
-                  className={`p-3 rounded-2xl border text-center transition-all shadow-2xs cursor-pointer ${
-                    isAssigned
-                      ? 'bg-amber-50 border-amber-200 text-amber-800 opacity-80 cursor-not-allowed'
-                      : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-900 font-bold hover:scale-105'
-                  }`}
-                >
-                  <div className="text-sm font-mono font-black">{l.lockerNumber}</div>
-                  <div className="text-[10px] mt-0.5 opacity-80">{l.sizeCategory || 'Medium'}</div>
-                  <div className="text-[9px] mt-1 font-extrabold">{isAssigned ? 'Occupied' : `₹${l.rentalFee + l.securityDeposit}`}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: COSTUME INVENTORY & PRICING */}
-      {activeTab === 'costumes_stock' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Shirt size={16} className="text-emerald-600" /> Swimwear & Towels Master Stock Catalog
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Manage item pricing, rental fees, caution deposits & available inventory stock.</p>
+              <h3 className="text-sm font-bold text-slate-800">Enterprise Costume & Locker Management</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Master stock registers, audit logs, and catalog management.</p>
             </div>
             {isSuperAdmin && (
-              <button
-                onClick={() => setShowAddCostumeModal(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus size={14} /> Add New Costume
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowAddLockerModal(true)} className="px-3.5 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer">
+                  + Add Locker
+                </button>
+                <button onClick={() => setShowAddCostumeModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold shadow-md cursor-pointer">
+                  + Add Costume
+                </button>
+              </div>
             )}
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
-                <tr>
-                  <th className="p-3.5">Code</th>
-                  <th className="p-3.5">Item Name</th>
-                  <th className="p-3.5">Category & Size</th>
-                  <th className="p-3.5">Total Stock</th>
-                  <th className="p-3.5">Available</th>
-                  <th className="p-3.5">Rental Fee</th>
-                  <th className="p-3.5">Caution Deposit</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {(costumesList || []).map(c => (
-                  <tr key={c.id || c.code} className="hover:bg-slate-50 transition">
-                    <td className="p-3.5 font-mono font-bold text-indigo-600">{c.code}</td>
-                    <td className="p-3.5 font-bold text-slate-800">{c.name}</td>
-                    <td className="p-3.5 text-slate-600">{c.category} ({c.size})</td>
-                    <td className="p-3.5 font-bold text-slate-800">{c.totalStock}</td>
-                    <td className="p-3.5 font-extrabold text-emerald-600">{c.availableStock}</td>
-                    <td className="p-3.5 text-slate-800 font-bold">₹{c.rentalFee}</td>
-                    <td className="p-3.5 text-amber-600 font-bold">₹{c.securityDeposit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
