@@ -9,8 +9,10 @@ import {
 
 export default function CostumeLockerPage() {
   const { defaultRules, user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
-  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
-  const currentMode = defaultRules?.costumeLockerMode || 'express';
+  const rawMode = defaultRules?.costumeLockerMode || 'express';
+  let currentMode = 'express';
+  if (rawMode === 'tabs') currentMode = 'tabs';
+  else if (rawMode === 'enterprise' || rawMode === 'advanced') currentMode = 'enterprise';
 
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock
   const [searchQuery, setSearchQuery] = useState('');
