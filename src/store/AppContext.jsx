@@ -51,6 +51,7 @@ const initialState = {
     checkInTime: '12:00 PM', checkOutTime: '10:00 AM',
     holdExpiry: '4 Hours', currency: 'INR', taxRate: 12, nightAuditTime: '01:00 AM',
     kitchenInventoryMode: 'simple', // 'simple' | 'advanced' (Default: simple)
+    costumeLockerMode: 'simple', // 'simple' | 'advanced' (Default: simple)
     minAdvancePct: 0, minAdvanceAmt: 0,
     receiptHotelName: 'YOYO Fun Resort & Water Park',
     receiptAddress: 'Plot No. 12, Waterfront Road, Near Beach Colony',
@@ -518,6 +519,8 @@ function reducer(state, action) {
       return { ...state, roles: [...state.roles, { id: Date.now(), users: 0, ...action.payload }] };
     case 'UPDATE_DEFAULT_RULES':
       return { ...state, defaultRules: { ...state.defaultRules, ...action.payload } };
+    case 'SET_COSTUME_LOCKER_MODE':
+      return { ...state, defaultRules: { ...state.defaultRules, costumeLockerMode: action.payload } };
     case 'UPDATE_EMAIL_SCHEDULER':
       return { ...state, emailScheduler: { ...state.emailScheduler, ...action.payload } };
     case 'ADD_DEMO_USER':

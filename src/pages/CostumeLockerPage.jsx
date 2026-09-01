@@ -4,12 +4,14 @@ import { pmsService } from '../services/pmsService';
 import {
   Key, Search, Plus, RotateCcw, CheckCircle, AlertTriangle, UserCheck,
   ShieldAlert, DollarSign, Shirt, Hash, Sparkles, X, Printer, User, Phone,
-  CreditCard, Banknote, Smartphone, FileText, Check, ShieldCheck, Tag
+  CreditCard, Banknote, Smartphone, FileText, Check, ShieldCheck, Tag,
+  Zap, Sliders, Minus, UserPlus
 } from 'lucide-react';
 
 export default function CostumeLockerPage() {
-  const { user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
+  const { defaultRules, user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+  const currentMode = defaultRules?.costumeLockerMode || 'simple';
 
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock
   const [searchQuery, setSearchQuery] = useState('');
@@ -285,27 +287,59 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        {isSuperAdmin && (
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5">
+          {/* Mode Switcher Toggle */}
+          <div className="flex items-center bg-slate-200/70 p-1 rounded-xl border border-slate-300/60 shadow-2xs">
             <button
-              onClick={() => setShowAddLockerModal(true)}
-              className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
+              onClick={() => {
+                dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'simple' });
+                showToast('Switched to Simple Express Counter');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentMode === 'simple'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <Plus size={14} className="text-indigo-600" /> Add Locker
+              <Zap size={14} className={currentMode === 'simple' ? 'text-indigo-600 fill-indigo-600' : ''} /> ⚡ Simple Express Counter
             </button>
             <button
-              onClick={() => setShowAddCostumeModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-1.5"
+              onClick={() => {
+                dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: 'advanced' });
+                showToast('Switched to Enterprise Full Registers Mode');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentMode === 'advanced'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <Shirt size={14} /> Add Costume Item
+              <Sliders size={14} className={currentMode === 'advanced' ? 'text-indigo-600' : ''} /> 🚀 Enterprise Registers
             </button>
           </div>
-        )}
+
+          {isSuperAdmin && (
+            <>
+              <button
+                onClick={() => setShowAddLockerModal(true)}
+                className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+              >
+                <Plus size={14} className="text-indigo-600" /> Add Locker
+              </button>
+              <button
+                onClick={() => setShowAddCostumeModal(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-1.5"
+              >
+                <Shirt size={14} /> Add Costume Item
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Live Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Assigned Lockers</p>
             <p className="text-2xl font-extrabold text-slate-800 mt-1">
@@ -317,7 +351,7 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Rentals</p>
             <p className="text-2xl font-extrabold text-slate-800 mt-1">{activeIssues.length}</p>
@@ -327,7 +361,7 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Caution Deposit Held</p>
             <p className="text-2xl font-extrabold text-amber-600 mt-1">₹{totalCautionHeld}</p>
@@ -337,7 +371,7 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Today's Rental Income</p>
             <p className="text-2xl font-extrabold text-indigo-600 mt-1">₹{todayRentalRevenue}</p>
@@ -348,134 +382,449 @@ export default function CostumeLockerPage() {
         </div>
       </div>
 
-      {/* Unified Customer Auto-Sync Search Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm relative">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex-1">
-            <label className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <UserCheck size={14} /> Search & Auto-Sync Unified Customer ID
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="text"
-                placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag and press Enter..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (filteredCustomers.length > 0) {
-                      handleSelectCustomer(filteredCustomers[0]);
-                    } else if (searchQuery.trim()) {
-                      handleSelectCustomer({
-                        customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                        name: searchQuery.trim(),
-                        phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 00000',
-                        roomNumber: '',
-                        wristbandId: ''
-                      });
-                    }
-                  }
-                }}
-                className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
-              />
-            </div>
-          </div>
-
-          {/* Selected Customer Info Card */}
-          {selectedCustomer ? (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 min-w-[280px] flex items-center justify-between gap-3 shadow-xs">
-              <div>
-                <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                  {selectedCustomer.name}
-                  <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
-                    {selectedCustomer.customerCode || 'Synced'}
-                  </span>
-                </p>
-                <p className="text-[11px] text-indigo-800 mt-0.5">
-                  Phone: {selectedCustomer.phone} {selectedCustomer.roomNumber ? `• Room: ${selectedCustomer.roomNumber}` : ''}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedCustomer(null)}
-                className="text-slate-400 hover:text-slate-700 p-1"
-                title="Clear selection"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ) : (
-            <div className="text-xs text-slate-400 italic">
-              Search above to auto-fill guest profile from Ticket Counter or Check-In.
-            </div>
-          )}
-        </div>
-
-        {/* Search Results Dropdown */}
-        {searchQuery && !selectedCustomer && (
-          <div className="mt-3 bg-white border border-slate-200 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-lg z-20 relative">
-            {filteredCustomers.length > 0 ? (
-              filteredCustomers.map(c => (
-                <div
-                  key={c.id || c.customerCode}
-                  onClick={() => handleSelectCustomer(c)}
-                  className="p-2.5 hover:bg-indigo-50 cursor-pointer flex items-center justify-between text-xs transition"
-                >
-                  <div>
-                    <span className="font-bold text-slate-800">{c.name}</span>
-                    <span className="ml-2 font-mono text-indigo-600">({c.customerCode})</span>
-                    <span className="ml-2 text-slate-500">{c.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {c.roomNumber && <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px]">Room {c.roomNumber}</span>}
-                    <span className="text-indigo-600 font-semibold">Select →</span>
-                  </div>
+      {currentMode === 'simple' ? (
+        /* ----------------------------------------------------
+           ⚡ SIMPLE EXPRESS COUNTER VIEW (1-Page Ultra Fast)
+           ---------------------------------------------------- */
+        <div className="space-y-6">
+          {/* 1. Customer Search & Quick Register Bar */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div className="flex-1">
+                <label className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <UserCheck size={14} /> Step 1: Search & Auto-Sync Customer ID (Or Type Mobile)
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag and press Enter..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (filteredCustomers.length > 0) {
+                          handleSelectCustomer(filteredCustomers[0]);
+                        } else if (searchQuery.trim()) {
+                          handleSelectCustomer({
+                            customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                            name: searchQuery.trim(),
+                            phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 00000',
+                            roomNumber: '',
+                            wristbandId: ''
+                          });
+                        }
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
+                  />
                 </div>
-              ))
-            ) : (
-              <div className="p-3 text-xs text-slate-500 flex items-center justify-between">
-                <span>No customer found matching "{searchQuery}".</span>
-                <button
-                  onClick={() => handleSelectCustomer({
-                    customerCode: `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                    name: searchQuery,
-                    phone: searchQuery.match(/^\+?\d+$/) ? searchQuery : '+91 98765 00000',
-                    roomNumber: '',
-                    wristbandId: ''
-                  })}
-                  className="text-indigo-600 hover:underline font-bold"
-                >
-                  + Auto-Create Profile "{searchQuery}"
-                </button>
+              </div>
+
+              {/* Selected Customer Info Card */}
+              {selectedCustomer ? (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 min-w-[280px] flex items-center justify-between gap-3 shadow-2xs">
+                  <div>
+                    <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                      {selectedCustomer.name}
+                      <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
+                        {selectedCustomer.customerCode || 'Synced'}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-indigo-800 mt-0.5">
+                      Phone: {selectedCustomer.phone} {selectedCustomer.roomNumber ? `• Room: ${selectedCustomer.roomNumber}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Clear selection"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+                  <span>Search above by <b>Customer ID</b> or type guest & press <b>Enter</b></span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Result Pills */}
+            {searchQuery && !selectedCustomer && (
+              <div className="flex items-center gap-2 overflow-x-auto pt-1">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase">Matching:</span>
+                {filteredCustomers.slice(0, 5).map((c) => (
+                  <button
+                    key={c.id || c.customerCode}
+                    onClick={() => handleSelectCustomer(c)}
+                    className="px-3 py-1 bg-slate-100 hover:bg-indigo-100 border border-slate-200 hover:border-indigo-300 rounded-full text-xs text-slate-700 hover:text-indigo-900 font-medium transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <User size={12} className="text-indigo-600" />
+                    {c.name} ({c.customerCode})
+                  </button>
+                ))}
+                {filteredCustomers.length === 0 && (
+                  <button
+                    onClick={() => handleSelectCustomer({
+                      customerCode: `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                      name: searchQuery,
+                      phone: '+91 98765 00000',
+                    })}
+                    className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-semibold hover:bg-indigo-700 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <UserPlus size={12} /> Register "{searchQuery}" as New Guest
+                  </button>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
-        <button
-          onClick={() => setActiveTab('issue')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'issue'
-              ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Key size={14} /> Issue Locker & Costumes
-        </button>
-        <button
-          onClick={() => setActiveTab('returns')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 ${
-            activeTab === 'returns'
-              ? 'border-amber-500 text-amber-600 bg-amber-50/50'
-              : 'border-transparent text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <RotateCcw size={14} /> Returns & Caution Refunds ({activeIssues.length})
-        </button>
+          {/* 2-Column Express Layout: Left = Fast Issue Counter, Right = Active Rentals & Instant Returns */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* LEFT 7-COL: Express Issue Form */}
+            <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-6">
+              {/* Step 2: Visual Locker Grid Picker */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key size={16} className="text-indigo-600" /> Step 2: Tap to Select Locker (Optional)
+                  </h3>
+                  {selectedLockerId && (
+                    <button
+                      onClick={() => setSelectedLockerId('')}
+                      className="text-[10px] text-red-500 hover:underline font-semibold cursor-pointer"
+                    >
+                      Clear Selection
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[160px] overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                  {(lockersList || []).map((l) => {
+                    const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                    const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
+                    return (
+                      <button
+                        key={l.id || l.lockerNumber}
+                        type="button"
+                        disabled={isAssigned}
+                        onClick={() => setSelectedLockerId(l.id || l.lockerNumber)}
+                        className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-300 shadow-md font-bold scale-105'
+                            : isAssigned
+                            ? 'bg-amber-100/70 border-amber-200 text-amber-700 cursor-not-allowed opacity-60'
+                            : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800 font-semibold'
+                        }`}
+                      >
+                        <div className="text-xs font-mono font-black">{l.lockerNumber}</div>
+                        <div className="text-[9px] mt-0.5 opacity-90 truncate">{l.sizeCategory || 'Medium'}</div>
+                        <div className="text-[8px] mt-0.5 font-bold">₹{l.rentalFee + l.securityDeposit}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 3: Express Swimwear & Towel Counter Cards */}
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Shirt size={16} className="text-indigo-600" /> Step 3: Select Swimwear & Towel Quantities
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {(costumesList || []).map((c) => {
+                    const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === c.id || sc.code === c.code);
+                    const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
+                    return (
+                      <div key={c.id || c.code} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
+                        <div>
+                          <div className="text-xs font-bold text-slate-800">{c.name}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            Rent: <b className="text-indigo-600">₹{c.rentalFee}</b> • Deposit: <b className="text-amber-600">₹{c.securityDeposit}</b>
+                          </div>
+                        </div>
+                        {/* Quantity Counter Buttons */}
+                        <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg p-1 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
+                            className="w-7 h-7 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold transition cursor-pointer disabled:opacity-40"
+                            disabled={qty === 0}
+                          >
+                            -
+                          </button>
+                          <span className="w-5 text-center text-xs font-extrabold text-slate-800">{qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCostumeQty(c, qty + 1)}
+                            className="w-7 h-7 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center font-bold transition cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 4: Payment Method & Submit */}
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-600 uppercase">Payment Method</span>
+                  <div className="flex gap-2">
+                    {['UPI', 'Cash', 'Card'].map((pm) => (
+                      <button
+                        key={pm}
+                        type="button"
+                        onClick={() => setPaymentMode(pm)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                          paymentMode === pm
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pm}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Breakdown Box */}
+                <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-700">
+                    <span>Total Rental Fee:</span>
+                    <span className="font-bold text-slate-900">₹{totalRentalFee}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-700">
+                    <span>Refundable Caution Deposit:</span>
+                    <span className="font-bold text-amber-700">₹{totalDepositHeld}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-extrabold text-indigo-950 pt-2 border-t border-indigo-200">
+                    <span>Grand Total Payable:</span>
+                    <span className="text-indigo-700">₹{grandTotalPaid}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleIssueSubmit}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle size={18} /> Issue Locker & Print Receipt (₹{grandTotalPaid})
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT 5-COL: Active Rentals & 1-Click Caution Refund Counter */}
+            <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <RotateCcw size={16} className="text-amber-600" /> Active Rentals & Caution Refunds ({activeIssues.length})
+                </h3>
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                  ₹{totalCautionHeld} Deposit Held
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1">
+                {activeIssues.map((issue) => (
+                  <div key={issue.id} className="p-4 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl space-y-3 shadow-2xs transition">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                          {issue.guestName || issue.guest_name || 'Guest'}
+                          {issue.lockerNumber && (
+                            <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-md font-mono">
+                              Locker #{issue.lockerNumber}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Phone: {issue.guestPhone || issue.guest_name || 'N/A'} {issue.customerCode ? `• ID: ${issue.customerCode}` : ''}
+                        </p>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    </div>
+
+                    {/* Items summary */}
+                    <div className="text-[11px] text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200/80">
+                      <span className="font-semibold text-slate-700">Costumes / Items:</span>{' '}
+                      {(issue.costumes || []).map(c => `${c.name || 'Item'} (${c.quantity || 1})`).join(', ') || 'No costumes'}
+                    </div>
+
+                    {/* Deposit Refund Action */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <div className="text-[9px] font-bold text-slate-400 uppercase">Deposit Refundable</div>
+                        <div className="text-sm font-black text-amber-600">₹{issue.totalDepositHeld || issue.total_deposit_held || 0}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReturnModalIssue(issue);
+                          setDamageFine(0);
+                          setReturnNotes('');
+                        }}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded-xl shadow-md shadow-amber-200 transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw size={14} /> Refund Deposit (₹{issue.totalDepositHeld || issue.total_deposit_held || 0})
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {activeIssues.length === 0 && (
+                  <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl text-slate-400 space-y-2">
+                    <Key size={28} className="mx-auto text-slate-300" />
+                    <p className="text-xs font-semibold">No Active Rentals Right Now</p>
+                    <p className="text-[10px]">Issued lockers and costumes will appear here for 1-click caution refunds.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ----------------------------------------------------
+           🚀 ENTERPRISE FULL REGISTERS VIEW (Multi-Tab Mode)
+           ---------------------------------------------------- */
+        <>
+          {/* Unified Customer Auto-Sync Search Banner */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-xs relative">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div className="flex-1">
+                <label className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <UserCheck size={14} /> Search & Auto-Sync Unified Customer ID
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag and press Enter..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (filteredCustomers.length > 0) {
+                          handleSelectCustomer(filteredCustomers[0]);
+                        } else if (searchQuery.trim()) {
+                          handleSelectCustomer({
+                            customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                            name: searchQuery.trim(),
+                            phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 00000',
+                            roomNumber: '',
+                            wristbandId: ''
+                          });
+                        }
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
+                  />
+                </div>
+              </div>
+
+              {/* Selected Customer Info Card */}
+              {selectedCustomer ? (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 min-w-[280px] flex items-center justify-between gap-3 shadow-2xs">
+                  <div>
+                    <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                      {selectedCustomer.name}
+                      <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
+                        {selectedCustomer.customerCode || 'Synced'}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-indigo-800 mt-0.5">
+                      Phone: {selectedCustomer.phone} {selectedCustomer.roomNumber ? `• Room: ${selectedCustomer.roomNumber}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Clear selection"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 italic">
+                  Search above to auto-fill guest profile from Ticket Counter or Check-In.
+                </div>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {searchQuery && !selectedCustomer && (
+              <div className="mt-3 bg-white border border-slate-200 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-lg z-20 relative">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((c) => (
+                    <div
+                      key={c.id || c.customerCode}
+                      onClick={() => handleSelectCustomer(c)}
+                      className="p-3 hover:bg-indigo-50/60 cursor-pointer transition flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                          {c.name}
+                          <span className="bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.5 rounded font-mono">
+                            {c.customerCode}
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Phone: {c.phone} {c.roomNumber ? `• Room: ${c.roomNumber}` : ''}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-indigo-600 font-semibold">Select →</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-xs text-slate-500 text-center flex items-center justify-between">
+                    <span>No customer found matching "{searchQuery}".</span>
+                    <button
+                      onClick={() => handleSelectCustomer({
+                        customerCode: `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                        name: searchQuery,
+                        phone: searchQuery.match(/^\+?\d+$/) ? searchQuery : '+91 98765 00000',
+                        roomNumber: '',
+                        wristbandId: ''
+                      })}
+                      className="text-indigo-600 hover:underline font-bold cursor-pointer"
+                    >
+                      + Auto-Create Profile "{searchQuery}"
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
+            <button
+              onClick={() => setActiveTab('issue')}
+              className={`px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                activeTab === 'issue'
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Key size={14} /> Issue Locker & Costumes
+            </button>
+            <button
+              onClick={() => setActiveTab('returns')}
+              className={`px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                activeTab === 'returns'
+                  ? 'border-amber-500 text-amber-600 bg-amber-50/50'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <RotateCcw size={14} /> Returns & Caution Refunds ({activeIssues.length})
+            </button>
         <button
           onClick={() => setActiveTab('lockers_grid')}
           className={`px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-2 ${
@@ -857,8 +1206,10 @@ export default function CostumeLockerPage() {
           </div>
         </div>
       )}
+    </>
+  )}
 
-      {/* PRINTABLE RECEIPT MODAL */}
+  {/* PRINTABLE RECEIPT MODAL */}
       {receiptIssue && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-slate-800">
