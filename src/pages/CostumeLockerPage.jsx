@@ -340,30 +340,58 @@ export default function CostumeLockerPage() {
           {/* Main Form Column (Left) */}
           <div className="flex-1 min-h-0 flex flex-col space-y-3 overflow-y-auto pr-1">
             {/* Stepper Progress Bar */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center justify-between max-w-2xl mx-auto">
-              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
+            <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-2xs flex items-center justify-between max-w-2xl mx-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('sec-customer');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}
+              >
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
                 Customer
-              </div>
+              </button>
               <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('sec-locker');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}
+              >
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
                 Locker
-              </div>
+              </button>
               <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('sec-items');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}
+              >
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
                 Items
-              </div>
+              </button>
               <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-              <div className={`flex items-center gap-2 text-xs font-bold ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('sec-payment');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }}
+                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}
+              >
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
                 Payment
-              </div>
+              </button>
             </div>
 
             {/* Section 1: Search Customer Card */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+            <div id="sec-customer" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
               <h3 className="text-sm font-bold text-slate-800">Search Customer</h3>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -461,7 +489,7 @@ export default function CostumeLockerPage() {
             </div>
 
             {/* Section 2: Select Locker Card */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+            <div id="sec-locker" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-800">Select Locker</h3>
                 <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500">
@@ -508,7 +536,7 @@ export default function CostumeLockerPage() {
             </div>
 
             {/* Section 3: Add Items Table */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+            <div id="sec-items" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
               <h3 className="text-sm font-bold text-slate-800">Add Items</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
@@ -564,7 +592,7 @@ export default function CostumeLockerPage() {
             </div>
 
             {/* Section 4: Bottom Payment Bar */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+            <div id="sec-payment" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-6">
                   <div>
