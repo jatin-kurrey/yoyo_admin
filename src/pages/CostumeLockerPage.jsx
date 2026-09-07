@@ -769,7 +769,7 @@ export default function CostumeLockerPage() {
                   </div>
                   <div className="flex justify-between text-amber-700">
                     <span>Caution Deposit (Refundable):</span>
-                    <span className="font-extrabold text-amber-700 font-mono">₹{totalCautionDeposit}</span>
+                    <span className="font-extrabold text-amber-700 font-mono">₹{totalDepositHeld}</span>
                   </div>
                 </div>
 
@@ -779,7 +779,7 @@ export default function CostumeLockerPage() {
                     <div className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider">Grand Total Paid:</div>
                     <div className="text-xs text-indigo-500 font-medium">Incl. all taxes & deposit</div>
                   </div>
-                  <div className="text-xl font-black text-indigo-600 font-mono">₹{grandTotalToPay}</div>
+                  <div className="text-xl font-black text-indigo-600 font-mono">₹{grandTotalPaid}</div>
                 </div>
               </div>
 
@@ -791,9 +791,9 @@ export default function CostumeLockerPage() {
                     <button
                       key={method}
                       type="button"
-                      onClick={() => setPaymentMethod(method)}
+                      onClick={() => setPaymentMode(method)}
                       className={`py-1.5 text-xs font-extrabold rounded-xl border cursor-pointer transition ${
-                        paymentMethod === method
+                        paymentMode === method
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
@@ -809,11 +809,11 @@ export default function CostumeLockerPage() {
             <div className="pt-2 shrink-0 border-t border-slate-100">
               <button
                 type="button"
-                onClick={handleIssueLocker}
+                onClick={handleIssueSubmit}
                 disabled={selectedLockerIds.length === 0 && selectedCostumes.length === 0}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer size={15} /> Issue Locker & Print Receipt (₹{grandTotalToPay})
+                <Printer size={15} /> Issue Locker & Print Receipt (₹{grandTotalPaid})
               </button>
             </div>
           </div>
