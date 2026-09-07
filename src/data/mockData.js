@@ -415,11 +415,48 @@ export const mockCustomers = [
 ];
 
 export const mockLockers = [
-  { id: 'LOC-101', lockerNumber: 'L-101', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Amit Sharma', assignedPhone: '+91 98765 11223', assignedCustomerCode: 'CST-1001' },
-  { id: 'LOC-102', lockerNumber: 'L-102', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
-  { id: 'LOC-103', lockerNumber: 'L-103', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Neha Verma', assignedPhone: '+91 98111 55443', assignedCustomerCode: 'CST-1002' },
-  { id: 'LOC-104', lockerNumber: 'L-104', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
-  { id: 'LOC-105', lockerNumber: 'L-105', zone: 'VIP Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  // Men Changing Area (20 Lockers)
+  { id: 'LOC-M101', lockerNumber: 'M-101', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Amit Sharma', assignedPhone: '+91 98765 11223', assignedCustomerCode: 'CST-1001' },
+  { id: 'LOC-M102', lockerNumber: 'M-102', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M103', lockerNumber: 'M-103', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M104', lockerNumber: 'M-104', zone: 'Men Changing Area', sizeCategory: 'Large', status: 'assigned', rentalFee: 150, securityDeposit: 100, assignedTo: 'Rahul Kumar', assignedPhone: '+91 98222 33445', assignedCustomerCode: 'CST-1004' },
+  { id: 'LOC-M105', lockerNumber: 'M-105', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M106', lockerNumber: 'M-106', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M107', lockerNumber: 'M-107', zone: 'Men Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M108', lockerNumber: 'M-108', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M109', lockerNumber: 'M-109', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M110', lockerNumber: 'M-110', zone: 'Men Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M111', lockerNumber: 'M-111', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M112', lockerNumber: 'M-112', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M113', lockerNumber: 'M-113', zone: 'Men Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M114', lockerNumber: 'M-114', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-M115', lockerNumber: 'M-115', zone: 'Men Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+
+  // Ladies Changing Area (20 Lockers)
+  { id: 'LOC-L201', lockerNumber: 'L-201', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'assigned', rentalFee: 100, securityDeposit: 100, assignedTo: 'Neha Verma', assignedPhone: '+91 98111 55443', assignedCustomerCode: 'CST-1002' },
+  { id: 'LOC-L202', lockerNumber: 'L-202', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L203', lockerNumber: 'L-203', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L204', lockerNumber: 'L-204', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L205', lockerNumber: 'L-205', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L206', lockerNumber: 'L-206', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L207', lockerNumber: 'L-207', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L208', lockerNumber: 'L-208', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L209', lockerNumber: 'L-209', zone: 'Ladies Changing Area', sizeCategory: 'Medium', status: 'available', rentalFee: 100, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-L210', lockerNumber: 'L-210', zone: 'Ladies Changing Area', sizeCategory: 'Large', status: 'available', rentalFee: 150, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+
+  // VIP Family Locker Suite (10 Lockers)
+  { id: 'LOC-V301', lockerNumber: 'VIP-301', zone: 'VIP Family Locker Room', sizeCategory: 'VIP', status: 'assigned', rentalFee: 250, securityDeposit: 200, assignedTo: 'Priya Singh', assignedPhone: '+91 98999 11223', assignedCustomerCode: 'CST-1003' },
+  { id: 'LOC-V302', lockerNumber: 'VIP-302', zone: 'VIP Family Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-V303', lockerNumber: 'VIP-303', zone: 'VIP Family Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-V304', lockerNumber: 'VIP-304', zone: 'VIP Family Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-V305', lockerNumber: 'VIP-305', zone: 'VIP Family Locker Room', sizeCategory: 'VIP', status: 'available', rentalFee: 250, securityDeposit: 200, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+
+  // Executive & Staff Lockers (10 Lockers)
+  { id: 'LOC-E401', lockerNumber: 'E-401', zone: 'Executive Lounge Area', sizeCategory: 'Medium', status: 'available', rentalFee: 120, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-E402', lockerNumber: 'E-402', zone: 'Executive Lounge Area', sizeCategory: 'Medium', status: 'available', rentalFee: 120, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-E403', lockerNumber: 'E-403', zone: 'Executive Lounge Area', sizeCategory: 'Medium', status: 'available', rentalFee: 120, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-E404', lockerNumber: 'E-404', zone: 'Executive Lounge Area', sizeCategory: 'Medium', status: 'available', rentalFee: 120, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
+  { id: 'LOC-E405', lockerNumber: 'E-405', zone: 'Executive Lounge Area', sizeCategory: 'Medium', status: 'available', rentalFee: 120, securityDeposit: 100, assignedTo: '', assignedPhone: '', assignedCustomerCode: '' },
 ];
 
 export const mockCostumes = [

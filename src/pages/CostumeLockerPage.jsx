@@ -37,6 +37,12 @@ export default function CostumeLockerPage() {
   const [returnModalIssue, setReturnModalIssue] = useState(null);
   const [damageFine, setDamageFine] = useState(0);
   const [returnNotes, setReturnNotes] = useState('');
+  const [refundPaymentMode, setRefundPaymentMode] = useState('Cash');
+
+  // Locker Filters state
+  const [selectedZoneFilter, setSelectedZoneFilter] = useState('All');
+  const [lockerSearchQuery, setLockerSearchQuery] = useState('');
+  const [lockerStatusFilter, setLockerStatusFilter] = useState('All');
 
   // Add Costume Modal state
   const [showAddCostumeModal, setShowAddCostumeModal] = useState(false);
@@ -97,6 +103,17 @@ export default function CostumeLockerPage() {
     (c.roomNumber || '').includes(searchQuery) ||
     (c.wristbandId || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Filter Lockers by Zone, Search, and Status
+  const filteredLockers = (lockersList || []).filter(l => {
+    const zoneMatch = selectedZoneFilter === 'All' || (l.zone || '').toLowerCase().includes(selectedZoneFilter.toLowerCase());
+    const searchMatch = (l.lockerNumber || '').toLowerCase().includes(lockerSearchQuery.toLowerCase()) ||
+                        (l.assignedTo || '').toLowerCase().includes(lockerSearchQuery.toLowerCase());
+    const statusMatch = lockerStatusFilter === 'All' ||
+                        (lockerStatusFilter === 'available' && l.status !== 'assigned' && l.status !== 'occupied') ||
+                        (lockerStatusFilter === 'assigned' && (l.status === 'assigned' || l.status === 'occupied'));
+    return zoneMatch && searchMatch && statusMatch;
+  });
 
   const handleSelectCustomer = (cust) => {
     setSelectedCustomer(cust);
@@ -491,17 +508,81 @@ export default function CostumeLockerPage() {
 
             {/* Section 2: Select Locker Card */}
             <div id="sec-locker" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-800">Select Locker</h3>
-                <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Occupied</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span> Maintenance</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  Select Locker
+                  <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
+                    {filteredLockers.length} Lockers
+                  </span>
+                </h3>
+
+                {/* Zone Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  {['All', 'Men', 'Ladies', 'VIP', 'Executive'].map((z) => (
+                    <button
+                      key={z}
+                      type="button"
+                      onClick={() => setSelectedZoneFilter(z)}
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
+                        selectedZoneFilter === z
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {z === 'All' ? 'All Zones' : z === 'Men' ? '👨 Men' : z === 'Ladies' ? '👩 Ladies' : z === 'VIP' ? '👑 VIP' : '💼 Exec'}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {(lockersList || []).slice(0, 5).map((l) => {
+              {/* Locker Search & Status Filter Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <input
+                    type="text"
+                    placeholder="Search locker number (e.g. M-101, L-201, VIP-301)..."
+                    value={lockerSearchQuery}
+                    onChange={(e) => setLockerSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 text-xs">
+                  {['All', 'available', 'assigned'].map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setLockerStatusFilter(st)}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
+                        lockerStatusFilter === st
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {st === 'All' ? 'All Status' : st === 'available' ? '• Available' : '• Occupied'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Locker Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                {/* No Locker Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedLockerId('')}
+                  className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                    selectedLockerId === ''
+                      ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
+                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <div className="text-xs font-extrabold text-slate-900">No Locker</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">Costumes only</div>
+                </button>
+
+                {filteredLockers.map((l) => {
                   const isAssigned = l.status === 'assigned' || l.status === 'occupied';
                   const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
                   return (
@@ -510,7 +591,7 @@ export default function CostumeLockerPage() {
                       type="button"
                       disabled={isAssigned}
                       onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
-                      className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer relative ${
                         isSelected
                           ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 shadow-md font-bold'
                           : isAssigned
@@ -518,21 +599,26 @@ export default function CostumeLockerPage() {
                           : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
                       }`}
                     >
-                      <div className="text-sm font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                      <div className="text-xs font-extrabold text-slate-700 mt-1">₹{l.rentalFee + l.securityDeposit}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{l.sizeCategory || 'Medium'}</div>
-                      <div className="text-[10px] mt-2 font-extrabold">
+                      <div className="text-xs font-mono font-black text-slate-900">{l.lockerNumber}</div>
+                      <div className="text-[11px] font-extrabold text-slate-700 mt-0.5">₹{l.rentalFee + l.securityDeposit}</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5 truncate">{l.zone || 'Medium'}</div>
+                      <div className="text-[10px] mt-1.5 font-extrabold">
                         {isSelected ? (
-                          <span className="text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">✓ Selected</span>
+                          <span className="text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full text-[9px]">✓ Selected</span>
                         ) : isAssigned ? (
-                          <span className="text-amber-700">• Occupied</span>
+                          <span className="text-amber-700 text-[9px]">• Occupied</span>
                         ) : (
-                          <span className="text-emerald-600">• Available</span>
+                          <span className="text-emerald-600 text-[9px]">• Available</span>
                         )}
                       </div>
                     </button>
                   );
                 })}
+                {filteredLockers.length === 0 && (
+                  <div className="col-span-full py-6 text-center text-slate-400 text-xs">
+                    No lockers found matching search & zone filter.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1246,31 +1332,83 @@ export default function CostumeLockerPage() {
               <div className="lg:col-span-2 space-y-6">
                 {/* 1. Select Locker Card */}
                 <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</span>
                       Select Locker
+                      <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
+                        {filteredLockers.length} Lockers
+                      </span>
                     </h3>
-                    <span className="text-[11px] text-slate-400 font-semibold">Optional</span>
+
+                    {/* Zone Filter Tabs */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                      {['All', 'Men', 'Ladies', 'VIP', 'Executive'].map((z) => (
+                        <button
+                          key={z}
+                          type="button"
+                          onClick={() => setSelectedZoneFilter(z)}
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
+                            selectedZoneFilter === z
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {z === 'All' ? 'All Zones' : z === 'Men' ? '👨 Men' : z === 'Ladies' ? '👩 Ladies' : z === 'VIP' ? '👑 VIP' : '💼 Exec'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Locker Search & Status Filter Bar */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="relative flex-1 w-full">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input
+                        type="text"
+                        placeholder="Search locker (e.g. M-101, L-201, VIP-301)..."
+                        value={lockerSearchQuery}
+                        onChange={(e) => setLockerSearchQuery(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs">
+                      {['All', 'available', 'assigned'].map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setLockerStatusFilter(st)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
+                            lockerStatusFilter === st
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {st === 'All' ? 'All Status' : st === 'available' ? '• Available' : '• Occupied'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Locker Cards Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-60 overflow-y-auto pr-1">
                     {/* No Locker Card */}
                     <button
                       type="button"
                       onClick={() => setSelectedLockerId('')}
-                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                         selectedLockerId === ''
-                          ? 'bg-slate-50 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
+                          ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
                           : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                       }`}
                     >
                       <div className="text-xs font-extrabold text-slate-900">No Locker</div>
-                      <div className="text-[10px] text-slate-400 mt-1">Costumes / Towel only</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Costumes only</div>
                     </button>
 
                     {/* Locker Cards */}
-                    {(lockersList || []).slice(0, 3).map((l) => {
+                    {filteredLockers.map((l) => {
                       const isAssigned = l.status === 'assigned' || l.status === 'occupied';
                       const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
                       return (
@@ -1279,7 +1417,7 @@ export default function CostumeLockerPage() {
                           type="button"
                           disabled={isAssigned}
                           onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
-                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
                             isSelected
                               ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold'
                               : isAssigned
@@ -1287,18 +1425,23 @@ export default function CostumeLockerPage() {
                               : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
                           }`}
                         >
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-full absolute top-2.5 right-2.5">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded-full absolute top-2 right-2">
                             {l.sizeCategory || 'Medium'}
                           </span>
-                          <div className="text-sm font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                          <div className="text-[11px] text-slate-500 mt-1">{l.zone || 'Men Area'}</div>
-                          <div className="flex items-center justify-between text-[11px] mt-3 pt-2 border-t border-slate-100">
+                          <div className="text-xs font-mono font-black text-slate-900">{l.lockerNumber}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">{l.zone || 'Men Area'}</div>
+                          <div className="flex items-center justify-between text-[10px] mt-2 pt-1.5 border-t border-slate-100">
                             <span>Rent: <b>₹{l.rentalFee}</b></span>
                             <span className="text-amber-600">Dep: <b>₹{l.securityDeposit}</b></span>
                           </div>
                         </button>
                       );
                     })}
+                    {filteredLockers.length === 0 && (
+                      <div className="col-span-full py-6 text-center text-slate-400 text-xs">
+                        No lockers found matching zone & search.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1687,7 +1830,7 @@ export default function CostumeLockerPage() {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <RotateCcw size={16} className="text-amber-500" /> Return & Refund Caution Deposit
+                <RotateCcw size={16} className="text-amber-500" /> Return Locker & Refund Caution Deposit
               </h3>
               <button onClick={() => setReturnModalIssue(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X size={18} />
@@ -1696,44 +1839,101 @@ export default function CostumeLockerPage() {
 
             <form onSubmit={handleReturnSubmit} className="space-y-4 text-xs">
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm">{returnModalIssue.guestName}</p>
-                <p className="text-slate-500 font-mono">{returnModalIssue.customerCode} • {returnModalIssue.guestPhone}</p>
-                {returnModalIssue.lockerNumber && (
-                  <p className="text-indigo-600 font-bold mt-1">Locker Number: {returnModalIssue.lockerNumber}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{returnModalIssue.guestName || returnModalIssue.guest_name}</p>
+                    <p className="text-slate-500 font-mono text-[11px]">{returnModalIssue.customerCode} • {returnModalIssue.guestPhone || '+91 98765 11223'}</p>
+                  </div>
+                  {returnModalIssue.lockerNumber && (
+                    <span className="bg-indigo-100 text-indigo-800 font-mono font-bold text-xs px-2.5 py-1 rounded-lg">
+                      Locker {returnModalIssue.lockerNumber}
+                    </span>
+                  )}
+                </div>
+                {returnModalIssue.roomNumber && (
+                  <p className="text-slate-600 text-[11px]">Room #{returnModalIssue.roomNumber} • Wristband #{returnModalIssue.wristbandId || 'W-7854'}</p>
                 )}
               </div>
 
+              {/* Deposit Held Box */}
               <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex justify-between items-center text-amber-900 font-bold">
-                <span>Caution Deposit Held:</span>
-                <span className="text-base font-extrabold text-amber-600">₹{returnModalIssue.totalDepositHeld}</span>
+                <span className="flex items-center gap-1.5"><ShieldAlert size={15} /> Caution Deposit Held:</span>
+                <span className="text-base font-extrabold text-amber-600">₹{returnModalIssue.totalDepositHeld || 0}</span>
               </div>
 
+              {/* Preset Damage Fines */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Damage / Loss Fine (If key or costume lost):</label>
+                <label className="block text-slate-700 font-bold mb-1.5">Quick Damage / Fine Presets:</label>
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  {[
+                    { label: '✓ No Damage (₹0)', amount: 0 },
+                    { label: '🔑 Lost Key (₹50)', amount: 50 },
+                    { label: '👕 Damaged Costume (₹100)', amount: 100 },
+                    { label: '🧼 Missing Towel (₹50)', amount: 50 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => setDamageFine(preset.amount)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition text-left cursor-pointer ${
+                        Number(damageFine) === preset.amount
+                          ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block text-slate-600 font-semibold mb-1">Custom Fine Amount (₹):</label>
                 <input
                   type="number"
                   min="0"
-                  max={returnModalIssue.totalDepositHeld}
+                  max={returnModalIssue.totalDepositHeld || 500}
                   value={damageFine}
                   onChange={(e) => setDamageFine(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-800 outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-slate-800 outline-none focus:border-amber-500 font-bold"
                 />
               </div>
 
+              {/* Refund Payment Mode */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1.5">Refund Payment Mode:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Cash', 'UPI', 'Room Folio'].map((pm) => (
+                    <button
+                      key={pm}
+                      type="button"
+                      onClick={() => setRefundPaymentMode(pm)}
+                      className={`py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        refundPaymentMode === pm
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {pm}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Inspection Notes */}
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">Remarks / Inspection Notes:</label>
                 <textarea
                   rows="2"
                   value={returnNotes}
                   onChange={(e) => setReturnNotes(e.target.value)}
-                  placeholder="e.g. Returned locker key intact, towel returned clean."
+                  placeholder="e.g. Returned locker key intact, swimwear returned clean."
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-slate-800 outline-none"
                 ></textarea>
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex justify-between items-center text-sm font-extrabold text-emerald-800">
-                <span>Net Refund to Guest:</span>
-                <span>₹{Math.max(0, (returnModalIssue.totalDepositHeld || 0) - Number(damageFine))}</span>
+              {/* Net Refund Calculation Card */}
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex justify-between items-center text-sm font-extrabold text-emerald-900 shadow-2xs">
+                <span>Net Refund Paid to Guest:</span>
+                <span className="text-base text-emerald-700">₹{Math.max(0, (returnModalIssue.totalDepositHeld || 0) - Number(damageFine))}</span>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -1746,9 +1946,9 @@ export default function CostumeLockerPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md cursor-pointer"
+                  className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Confirm Return & Refund
+                  <RotateCcw size={14} /> Confirm & Issue Refund
                 </button>
               </div>
             </form>
