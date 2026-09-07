@@ -11,7 +11,7 @@ const paymentMethods = [
 ];
 
 export default function WaterparkCounterPage() {
-  const { showToast } = useApp();
+  const { showToast, dispatch } = useApp();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState([]);

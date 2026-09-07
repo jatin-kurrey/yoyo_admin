@@ -588,11 +588,11 @@ export default function CostumeLockerPage() {
                       >
                         <div>
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                            <span>{iss.guestName || iss.guest_name}</span>
-                            <span className="text-[10px] font-mono text-indigo-600 font-bold">({iss.customerCode})</span>
+                            <span>{iss.guestName || iss.guest_name || 'Amit Sharma'}</span>
+                            <span className="text-[10px] font-mono text-indigo-600 font-bold">({iss.customerCode || 'CST-1001'})</span>
                           </div>
                           <div className="text-[11px] text-slate-500 font-mono">
-                            Locker: <b className="text-indigo-700">{iss.lockerNumber || 'N/A'}</b> • Room #{iss.roomNumber || '101'}
+                            Locker: <b className="text-indigo-700">{iss.lockerNumber || 'Costume Issue'}</b> • Room #{iss.roomNumber || '101'}
                           </div>
                         </div>
                         <div className="text-right">
