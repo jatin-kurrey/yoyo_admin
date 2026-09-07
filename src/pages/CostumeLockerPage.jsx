@@ -869,48 +869,104 @@ export default function CostumeLockerPage() {
           {/* LEFT & CENTER COLUMN (8 cols): Customer Banner, Category Lockers Grid & Costumes Picker */}
           <div className="lg:col-span-8 flex flex-col space-y-2 min-h-0 overflow-hidden">
             
-            {/* LOADED CUSTOMER BANNER WITH TICKET DETAILS */}
+            {/* LOADED CUSTOMER BANNER WITH RICH GUEST DETAILS */}
             {selectedCustomer ? (
-              <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-2 px-3 flex items-center justify-between gap-2.5 shrink-0 shadow-2xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                    {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 truncate">{selectedCustomer.name}</span>
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-1.5 py-0.2 rounded font-mono">
-                        {selectedCustomer.customerCode || 'CST-1001'}
-                      </span>
-                      {selectedCustomer.waterparkTickets && (
-                        <span className="bg-indigo-600 text-white text-[10px] font-semibold px-2 py-0.2 rounded font-mono">
-                          Ticket #{selectedCustomer.waterparkTickets.bookingRef}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-slate-500 truncate mt-0.5 font-medium">
-                      Room #{selectedCustomer.roomNumber || '101'} • Phone: {selectedCustomer.phone} • Wristband: {selectedCustomer.wristbandId || 'W-7854'}
-                    </p>
-                  </div>
-                </div>
+              (() => {
+                const custActiveIssues = activeIssues.filter(i =>
+                  (selectedCustomer?.customerCode && (i.customerCode || '').toLowerCase() === selectedCustomer.customerCode.toLowerCase()) ||
+                  (selectedCustomer?.phone && (i.phone || '').includes(selectedCustomer.phone)) ||
+                  (selectedCustomer?.name && (i.guestName || i.guest_name || '').toLowerCase().includes(selectedCustomer.name.toLowerCase()))
+                );
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setShowHistoryModal(true)}
-                    className="px-2 py-0.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded text-[10px] font-semibold transition cursor-pointer"
-                  >
-                    History
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCustomer(null)}
-                    className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
+                return (
+                  <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-indigo-50/40 border border-emerald-200/90 rounded-2xl p-2.5 px-3.5 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shrink-0 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm shadow-emerald-200">
+                        {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'G'}
+                      </div>
+
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center flex-wrap gap-1.5">
+                          <span className="text-xs md:text-sm font-black text-slate-900 truncate">
+                            {selectedCustomer.name || 'Guest User'}
+                          </span>
+
+                          <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-lg shadow-2xs">
+                            {selectedCustomer.customerCode || 'CST-1001'}
+                          </span>
+
+                          <span className="bg-indigo-600 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg shadow-2xs">
+                            {selectedCustomer.waterparkTickets?.bookingRef ? `Ticket #${selectedCustomer.waterparkTickets.bookingRef}` : 'Ticket #WP-8821'}
+                          </span>
+
+                          <span className="bg-amber-100 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-lg border border-amber-200/80">
+                            {selectedCustomer.roomNumber ? `In-House (Room #${selectedCustomer.roomNumber})` : 'Day Visitor Pass'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center flex-wrap gap-2 text-[11px] text-slate-600 font-medium">
+                          <span className="flex items-center gap-1 font-mono">
+                            📱 <b>{selectedCustomer.phone || '+91 98765 11223'}</b>
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 font-mono text-indigo-700 font-bold">
+                            🏷️ RFID: <b>{selectedCustomer.wristbandId || 'BAND-402'}</b>
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-slate-700">
+                            👥 Group: <b>{selectedCustomer.groupDetails || '2 Adults, 1 Kid'}</b>
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                            💳 Prepaid Balance: <b>₹{selectedCustomer.walletBalance || 1500}</b>
+                          </span>
+                        </div>
+
+                        {/* IF ACTIVE LOCKER/RENTAL ALREADY ISSUED TODAY */}
+                        {custActiveIssues.length > 0 && (
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                              <Key size={11} /> Currently Holding: {custActiveIssues.map(i => `Locker ${i.lockerNumber || 'Assigned'}`).join(', ')}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-amber-800">
+                              (₹{custActiveIssues.reduce((acc, i) => acc + (i.totalDepositHeld || 200), 0)} Caution Deposit Active)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReturnModalIssue(custActiveIssues[0]);
+                                setDamageFine(0);
+                                setReturnNotes('');
+                              }}
+                              className="text-[10px] font-extrabold text-amber-900 underline hover:text-amber-700 cursor-pointer ml-1"
+                            >
+                              Process Return / Refund
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 self-start md:self-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowHistoryModal(true)}
+                        className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      >
+                        <History size={13} /> History
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(null)}
+                        className="px-2 py-1 bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                        title="Clear Selected Customer"
+                      >
+                        <X size={14} /> Clear
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
               <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2 px-3 text-xs text-amber-800 flex items-center justify-between shrink-0 font-medium">
                 <div className="flex items-center gap-2">
@@ -1189,7 +1245,20 @@ export default function CostumeLockerPage() {
                 </span>
               </div>
 
-              {!selectedCustomer && (
+              {selectedCustomer ? (
+                <div className="p-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl text-xs space-y-1 shadow-2xs">
+                  <div className="flex justify-between items-center font-bold text-slate-900">
+                    <span className="truncate">{selectedCustomer.name}</span>
+                    <span className="font-mono text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.2 rounded text-[10px] font-extrabold shrink-0">
+                      {selectedCustomer.customerCode || 'CST-1001'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-600 font-medium font-mono flex items-center justify-between">
+                    <span>Room #{selectedCustomer.roomNumber || '101'} • 📱 {selectedCustomer.phone || '+91 98765 11223'}</span>
+                    <span className="text-indigo-700 font-bold">RFID: {selectedCustomer.wristbandId || 'BAND-402'}</span>
+                  </div>
+                </div>
+              ) : (
                 <div className="p-2 bg-amber-50/80 border border-amber-200/60 rounded-lg text-xs text-amber-800 font-medium text-center">
                   Search guest profile from top bar for slip.
                 </div>
