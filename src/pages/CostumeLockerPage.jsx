@@ -10,9 +10,10 @@ import {
 export default function CostumeLockerPage() {
   const { defaultRules, user, customers, lockers: ctxLockers, costumes: ctxCostumes, costumeIssues: ctxIssues, dispatch, showToast } = useApp();
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'admin' || !user?.role;
-  const rawMode = defaultRules?.costumeLockerMode || 'express';
-  let currentMode = 'express';
-  if (rawMode === 'tabs') currentMode = 'tabs';
+  const rawMode = defaultRules?.costumeLockerMode || 'enterprise';
+  let currentMode = 'enterprise';
+  if (rawMode === 'express' || rawMode === 'simple') currentMode = 'express';
+  else if (rawMode === 'tabs') currentMode = 'tabs';
   else if (rawMode === 'enterprise' || rawMode === 'advanced') currentMode = 'enterprise';
 
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock
@@ -335,21 +336,23 @@ export default function CostumeLockerPage() {
             <ShoppingBag size={14} className="text-emerald-600" /> Active Rentals ({activeIssues.length})
           </button>
 
-          {/* Counter Mode Switcher Dropdown (3 MODES!) */}
-          <div className="relative group">
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
-              <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Counter</span>
-              <select
-                value={currentMode}
-                onChange={(e) => handleModeSwitch(e.target.value)}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none cursor-pointer border-none transition"
-              >
-                <option value="express">⚡ Express Counter</option>
-                <option value="tabs">🗂️ Multi-Tab Registers</option>
-                <option value="enterprise">🚀 Enterprise Full Suite</option>
-              </select>
+          {/* Counter Mode Switcher Dropdown (Super Admin Only) */}
+          {isSuperAdmin && (
+            <div className="relative group">
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Counter</span>
+                <select
+                  value={currentMode}
+                  onChange={(e) => handleModeSwitch(e.target.value)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none cursor-pointer border-none transition"
+                >
+                  <option value="enterprise">🚀 Enterprise Full Suite (Default)</option>
+                  <option value="express">⚡ Express Counter</option>
+                  <option value="tabs">🗂️ Multi-Tab Registers</option>
+                </select>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
