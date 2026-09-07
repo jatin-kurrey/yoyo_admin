@@ -326,385 +326,276 @@ export default function CostumeLockerPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-1rem)] flex-1 bg-slate-50 p-4 md:p-5 overflow-hidden flex flex-col">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Costume & Locker Management</h1>
-          <p className="text-xs text-slate-500">
-            Issue lockers, swimwear costumes, towels & manage caution deposits
-          </p>
+    <div className="h-[calc(100vh-1rem)] flex flex-col bg-slate-50 p-2.5 md:p-3.5 overflow-hidden space-y-2.5">
+      {/* TOP COMPACT HEADER & UNIFIED SEARCH BAR */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-2 px-3.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-sm shadow-indigo-200">
+            <Key size={16} />
+          </div>
+          <div>
+            <h1 className="text-sm font-extrabold text-slate-900 leading-tight">Costumes & Lockers Counter</h1>
+            <p className="text-[10px] text-slate-500 font-medium">Issue lockers, swimwear costumes & caution deposits</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Today's Summary Pill */}
-          <div className="hidden lg:flex items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs shadow-2xs font-semibold text-slate-600 gap-2">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Today's Summary</span>
+        {/* CENTER: UNIFIED GUEST SEARCH BAR */}
+        <div className="flex-1 max-w-xl mx-auto w-full">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 text-slate-400" size={14} />
+            <input
+              type="text"
+              placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
+                  else if (searchQuery.trim()) {
+                    handleSelectCustomer({
+                      customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                      name: searchQuery.trim(),
+                      phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                      roomNumber: '101',
+                      wristbandId: 'W-7854'
+                    });
+                  }
+                }
+              }}
+              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-8 pr-20 py-1 text-xs placeholder-slate-400 outline-none transition"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
+                else if (searchQuery.trim()) {
+                  handleSelectCustomer({
+                    customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
+                    name: searchQuery.trim(),
+                    phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
+                    roomNumber: '101',
+                    wristbandId: 'W-7854'
+                  });
+                }
+              }}
+              className="absolute right-1 px-2.5 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg transition cursor-pointer"
+            >
+              Search
+            </button>
+          </div>
+        </div>
+
+        {/* RIGHT: QUICK STATS & RETURNS BUTTON */}
+        <div className="flex items-center gap-2">
+          <div className="hidden lg:flex items-center bg-slate-100 px-2.5 py-1 rounded-xl text-[11px] font-bold text-slate-700 gap-1.5">
             <span>Rental <b className="text-emerald-600">₹{todayRentalRevenue}</b></span>
             <span>•</span>
             <span>Deposit <b className="text-amber-600">₹{totalCautionHeld}</b></span>
-            <span>•</span>
-            <span>Active <b className="text-indigo-600">{activeIssues.length}</b></span>
           </div>
 
-          {/* Active Rentals Drawer Toggle */}
           <button
-            onClick={() => setShowActiveDrawer(!showActiveDrawer)}
-            className="px-3.5 py-1.5 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-bold text-slate-700 shadow-2xs transition flex items-center gap-2 cursor-pointer"
+            type="button"
+            onClick={() => setExpressSubMode(expressSubMode === 'return' ? 'issue' : 'return')}
+            className={`px-3 py-1 border rounded-xl text-[11px] font-extrabold shadow-2xs transition flex items-center gap-1.5 cursor-pointer ${
+              expressSubMode === 'return'
+                ? 'bg-amber-500 text-white border-amber-500'
+                : 'bg-amber-50 border-amber-200 hover:bg-amber-100 text-amber-900'
+            }`}
           >
-            <ShoppingBag size={14} className="text-emerald-600" /> Active Rentals ({activeIssues.length})
+            <RotateCcw size={13} /> {expressSubMode === 'return' ? '⬅️ Back to Issue' : `Refund Deposit (${activeIssues.length})`}
           </button>
 
-          {/* Counter Mode Switcher Dropdown (Super Admin Only) */}
           {isSuperAdmin && (
-            <div className="relative group">
-              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
-                <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Counter</span>
-                <select
-                  value={currentMode}
-                  onChange={(e) => handleModeSwitch(e.target.value)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none cursor-pointer border-none transition"
-                >
-                  <option value="enterprise">🚀 Enterprise Full Suite (Default)</option>
-                  <option value="express">⚡ Express Counter</option>
-                  <option value="tabs">🗂️ Multi-Tab Registers</option>
-                </select>
-              </div>
-            </div>
+            <select
+              value={currentMode}
+              onChange={(e) => handleModeSwitch(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-800 text-[11px] font-extrabold rounded-xl px-2 py-1 outline-none cursor-pointer"
+            >
+              <option value="enterprise">🚀 Enterprise</option>
+              <option value="express">⚡ Express</option>
+              <option value="tabs">🗂️ Multi-Tab</option>
+            </select>
           )}
         </div>
       </div>
 
-      {/* =========================================================================
-         MODE 1: ⚡ EXPRESS COUNTER (Modern 1-Page Stepper Wizard + Side Drawer)
-         Matches user screenshot with pixel perfection!
-         ========================================================================= */}
-      {currentMode === 'express' && (
-        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 items-stretch overflow-hidden">
-          {/* Main Form Column (Left) */}
-          <div className="flex-1 min-h-0 flex flex-col space-y-3 overflow-y-auto pr-1">
-            {/* Express Sub-Mode Selector Toggle Bar */}
-            <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-2xl shadow-2xs shrink-0">
-              <button
-                type="button"
-                onClick={() => setExpressSubMode('issue')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  expressSubMode === 'issue'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Plus size={16} /> ➕ Issue Locker & Swimwear
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setExpressSubMode('return')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  expressSubMode === 'return'
-                    ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <RotateCcw size={16} /> 🔄 Return & Caution Refund ({activeIssues.length})
-              </button>
+      {/* MAIN CONTENT AREA: FIXED FIT 100vh SINGLE SCREEN DASHBOARD */}
+      {expressSubMode === 'return' ? (
+        /* RETURN & CAUTION REFUND VIEW */
+        <div className="flex-1 min-h-0 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex flex-col space-y-3 overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 shrink-0">
+            <div>
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <RotateCcw size={15} className="text-amber-500" /> Caution Deposit Refund & Locker Returns
+              </h3>
+              <p className="text-[11px] text-slate-500">Select active rental below to process deposit refund</p>
             </div>
+            <span className="bg-amber-100 text-amber-900 text-xs px-2.5 py-0.5 rounded-full font-extrabold">
+              {activeIssues.length} Active Rentals
+            </span>
+          </div>
 
-            {/* IF IN ISSUE SUB-MODE */}
-            {expressSubMode === 'issue' && (
-              <>
-                {/* Stepper Progress Bar */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-2xs flex items-center justify-between max-w-2xl mx-auto shrink-0 w-full">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('sec-customer');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}
-                  >
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
-                    Customer
-                  </button>
-                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('sec-locker');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}
-                  >
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
-                    Locker
-                  </button>
-                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('sec-items');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}
-                  >
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
-                    Items
-                  </button>
-                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('sec-payment');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }}
-                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}
-                  >
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
-                    Payment
-                  </button>
-                </div>
-              </>
-            )}
+          <div className="relative shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input
+              type="text"
+              placeholder="Search by Locker # (M-101), Customer ID (CST-1001), Phone, or Wristband..."
+              value={expressReturnSearchQuery}
+              onChange={(e) => setExpressReturnSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 text-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none"
+            />
+          </div>
 
-            {/* IF IN RETURN SUB-MODE */}
-            {expressSubMode === 'return' && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <RotateCcw size={16} className="text-amber-500" /> Express Return & Caution Refund Counter
-                    </h3>
-                    <p className="text-xs text-slate-500">Search active rental by Locker No, Customer ID, Wristband, or Guest Name</p>
-                  </div>
-                  <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold">
-                    {activeIssues.length} Active Rentals Pending Return
-                  </span>
-                </div>
-
-                {/* Return Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Type Locker No (e.g. M-101, L-201), Customer ID (CST-1001), Room #, or Wristband Tag..."
-                    value={expressReturnSearchQuery}
-                    onChange={(e) => setExpressReturnSearchQuery(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
-                  />
-                </div>
-
-                {/* Active Issues Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                  {activeIssues
-                    .filter(iss => {
-                      if (!expressReturnSearchQuery.trim()) return true;
-                      const q = expressReturnSearchQuery.toLowerCase();
-                      return (
-                        (iss.lockerNumber || '').toLowerCase().includes(q) ||
-                        (iss.customerCode || '').toLowerCase().includes(q) ||
-                        (iss.guestName || iss.guest_name || '').toLowerCase().includes(q) ||
-                        (iss.roomNumber || '').toLowerCase().includes(q) ||
-                        (iss.wristbandId || '').toLowerCase().includes(q)
-                      );
-                    })
-                    .map((issue) => (
-                      <div key={issue.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-amber-300 transition shadow-2xs">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="text-sm font-extrabold text-slate-900">{issue.guestName || issue.guest_name || 'Amit Sharma'}</h4>
-                            <p className="text-xs font-mono text-indigo-600 font-bold mt-0.5">
-                              Customer: {issue.customerCode || 'CST-1001'} • Room {issue.roomNumber || '101'}
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
-                              Wristband: {issue.wristbandId || 'W-7854'}
-                            </p>
-                          </div>
-                          {issue.lockerNumber && (
-                            <span className="bg-indigo-600 text-white font-mono font-black text-xs px-2.5 py-1 rounded-xl shadow-2xs">
-                              {issue.lockerNumber}
-                            </span>
-                          )}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {activeIssues
+                .filter(iss => {
+                  if (!expressReturnSearchQuery.trim()) return true;
+                  const q = expressReturnSearchQuery.toLowerCase();
+                  return (
+                    (iss.lockerNumber || '').toLowerCase().includes(q) ||
+                    (iss.customerCode || '').toLowerCase().includes(q) ||
+                    (iss.guestName || iss.guest_name || '').toLowerCase().includes(q) ||
+                    (iss.wristbandId || '').toLowerCase().includes(q)
+                  );
+                })
+                .map((issue) => (
+                  <div key={issue.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 flex flex-col justify-between hover:border-amber-400 transition shadow-2xs">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-xs font-extrabold text-slate-900">{issue.guestName || issue.guest_name || 'Amit Sharma'}</h4>
+                          <p className="text-[11px] font-mono text-indigo-600 font-bold mt-0.5">
+                            {issue.customerCode} • Room #{issue.roomNumber || '101'}
+                          </p>
                         </div>
-
-                        {/* Costumes Rented */}
-                        <div className="space-y-1 text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200/80">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rented Items</span>
-                          {(issue.costumes || []).map((c, idx) => (
-                            <div key={idx} className="flex justify-between font-semibold">
-                              <span>{c.name || 'Swimwear (L)'}</span>
-                              <b className="font-mono text-slate-900">x{c.quantity || 1}</b>
-                            </div>
-                          ))}
-                          {(!issue.costumes || issue.costumes.length === 0) && (
-                            <div className="flex justify-between text-slate-500">
-                              <span>Standard Swimwear (L)</span>
-                              <b className="font-mono">x1</b>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-200">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Caution Deposit Held</span>
-                            <span className="text-base font-black text-amber-600">₹{issue.totalDepositHeld || 200}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReturnModalIssue(issue);
-                              setDamageFine(0);
-                              setReturnNotes('');
-                            }}
-                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <RotateCcw size={14} /> Refund Deposit ₹{issue.totalDepositHeld || 200}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  {activeIssues.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-slate-400 font-semibold text-xs">
-                      No active rentals pending return. All lockers and costumes are currently returned!
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Section 1: Search Customer Card */}
-            <div id="sec-customer" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-800">Search Customer</h3>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search by Mobile, Customer ID, Room No, or Wristband..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (filteredCustomers.length > 0) {
-                          handleSelectCustomer(filteredCustomers[0]);
-                        } else if (searchQuery.trim()) {
-                          handleSelectCustomer({
-                            customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                            name: searchQuery.trim(),
-                            phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                            roomNumber: '101',
-                            wristbandId: 'W-7854'
-                          });
-                        }
-                      }
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (filteredCustomers.length > 0) {
-                      handleSelectCustomer(filteredCustomers[0]);
-                    } else if (searchQuery.trim()) {
-                      handleSelectCustomer({
-                        customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                        name: searchQuery.trim(),
-                        phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                        roomNumber: '101',
-                        wristbandId: 'W-7854'
-                      });
-                    }
-                  }}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Search size={14} /> Search
-                </button>
-              </div>
-
-              {/* Selected Customer Card */}
-              {selectedCustomer ? (
-                <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-200">
-                        {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-extrabold text-slate-900">{selectedCustomer.name}</span>
-                          <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                            Active Guest Profile
+                        {issue.lockerNumber && (
+                          <span className="bg-indigo-600 text-white font-mono font-black text-xs px-2 py-0.5 rounded-lg shadow-2xs">
+                            {issue.lockerNumber}
                           </span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          <b className="font-mono text-emerald-700">{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          Wristband Tag: {selectedCustomer.wristbandId || 'W-7854'}
-                        </p>
+                        )}
+                      </div>
+
+                      <div className="mt-2 text-[11px] text-slate-700 bg-white p-2 rounded-lg border border-slate-200/80">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Rented Items</span>
+                        {(issue.costumes || []).map((c, idx) => (
+                          <div key={idx} className="flex justify-between font-semibold">
+                            <span>{c.name}</span>
+                            <b className="font-mono text-slate-900">x{c.quantity}</b>
+                          </div>
+                        ))}
+                        {(!issue.costumes || issue.costumes.length === 0) && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Swimwear (Standard)</span>
+                            <b className="font-mono">x1</b>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Caution Deposit</span>
+                        <span className="text-sm font-black text-amber-600">₹{issue.totalDepositHeld || 200}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setShowHistoryModal(true)}
-                        className="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                        onClick={() => {
+                          setReturnModalIssue(issue);
+                          setDamageFine(0);
+                          setReturnNotes('');
+                        }}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer"
                       >
-                        <History size={13} /> View Rental History
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCustomer(null)}
-                        className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                      >
-                        <X size={16} />
+                        <RotateCcw size={13} /> Refund Deposit ₹{issue.totalDepositHeld || 200}
                       </button>
                     </div>
                   </div>
-
-                  {/* Waterpark Tickets Summary Banner */}
-                  {selectedCustomer.waterparkTickets && (
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-xs text-indigo-950 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-indigo-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md">
-                          🎫 {selectedCustomer.waterparkTickets.bookingRef}
-                        </span>
-                        <span className="font-extrabold text-slate-800">
-                          {selectedCustomer.waterparkTickets.totalCount} Tickets ({selectedCustomer.waterparkTickets.adultTickets} Adult, {selectedCustomer.waterparkTickets.childTickets} Child)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-emerald-700">Total: ₹{selectedCustomer.waterparkTickets.totalAmount}</span>
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                          {selectedCustomer.waterparkTickets.status}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
-                  <AlertTriangle size={15} className="text-amber-600 shrink-0" />
-                  <span>Search above by <b>Customer ID</b> or type guest name/phone & press <b>Enter</b></span>
+                ))}
+              {activeIssues.length === 0 && (
+                <div className="col-span-full py-12 text-center text-slate-400 text-xs font-bold">
+                  No active rentals pending return. All lockers and costumes are currently returned!
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      ) : (
+        /* ISSUE COUNTER 100vh SINGLE SCREEN VIEW */
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 overflow-hidden">
+          {/* LEFT & CENTER COLUMN (8 cols): Customer Banner, Category Lockers Grid & Costumes Picker */}
+          <div className="lg:col-span-8 flex flex-col space-y-2 min-h-0 overflow-hidden">
+            
+            {/* LOADED CUSTOMER BANNER WITH TICKET DETAILS */}
+            {selectedCustomer ? (
+              <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-2 px-3 flex items-center justify-between gap-2.5 shrink-0 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold text-slate-900 truncate">{selectedCustomer.name}</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded font-mono">
+                        {selectedCustomer.customerCode || 'CST-1001'}
+                      </span>
+                      {selectedCustomer.waterparkTickets && (
+                        <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.2 rounded font-mono">
+                          🎫 {selectedCustomer.waterparkTickets.bookingRef} ({selectedCustomer.waterparkTickets.totalCount} Tickets)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-600 truncate mt-0.5">
+                      Room #{selectedCustomer.roomNumber || '101'} • Phone: {selectedCustomer.phone} • Wristband: {selectedCustomer.wristbandId || 'W-7854'}
+                    </p>
+                  </div>
+                </div>
 
-            {/* Section 2: Select Locker Card */}
-            <div id="sec-locker" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  Select Locker(s)
-                  <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
-                    {filteredLockers.length} Lockers ({totalAvailableLockers} Available)
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowHistoryModal(true)}
+                    className="px-2 py-0.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded text-[10px] font-bold transition cursor-pointer"
+                  >
+                    History
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCustomer(null)}
+                    className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-1.5 px-3 text-xs text-amber-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+                  <span>Search guest profile by <b>Customer ID</b>, Phone, or Wristband in top search bar</span>
+                </div>
+                <span className="text-[9px] text-amber-600 font-semibold hidden sm:inline">Auto-Sync Active</span>
+              </div>
+            )}
+
+            {/* 1. LOCKER SELECTION CARD (DIRECT CATEGORY TABS & INTERNAL GRID SCROLL) */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-2xs flex flex-col flex-1 min-h-0 overflow-hidden space-y-2">
+              {/* Category / Zone Tabs */}
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                    <Key size={13} className="text-indigo-600" /> Lockers Category
+                  </h3>
+                  <span className="bg-indigo-50 text-indigo-700 font-mono font-bold text-[10px] px-1.5 py-0.2 rounded-full">
+                    {totalAvailableLockers} Avail
                   </span>
-                </h3>
+                </div>
 
-                {/* Zone Filter Tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {/* Direct Category Tabs */}
+                <div className="flex items-center gap-1 overflow-x-auto">
                   {[
-                    { id: 'All', label: `All Zones (${totalAvailableLockers})` },
+                    { id: 'All', label: `All (${totalAvailableLockers})` },
                     { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
                     { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
                     { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
@@ -714,7 +605,7 @@ export default function CostumeLockerPage() {
                       key={z.id}
                       type="button"
                       onClick={() => setSelectedZoneFilter(z.id)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer shrink-0 ${
                         selectedZoneFilter === z.id
                           ? 'bg-indigo-600 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -726,625 +617,206 @@ export default function CostumeLockerPage() {
                 </div>
               </div>
 
-              {/* Locker Search & Status Filter Bar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                  <input
-                    type="text"
-                    placeholder="Search locker number (e.g. M-101, L-201, VIP-301)..."
-                    value={lockerSearchQuery}
-                    onChange={(e) => setLockerSearchQuery(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none focus:border-indigo-500"
-                  />
+              {/* Locker Grid (Scrolls internally within fixed card height) */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-1.5">
+                  {/* No Locker Button */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLockerIds([])}
+                    className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      selectedLockerIds.length === 0
+                        ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-black'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold">No Locker</div>
+                    <div className="text-[8px] text-slate-400">Costumes</div>
+                  </button>
+
+                  {/* Lockers List */}
+                  {filteredLockers.map((l) => {
+                    const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                    const locId = l.id || l.lockerNumber;
+                    const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
+                    return (
+                      <button
+                        key={l.id || l.lockerNumber}
+                        type="button"
+                        disabled={isAssigned}
+                        onClick={() => handleToggleLocker(l)}
+                        className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer relative flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 font-bold shadow-xs'
+                            : isAssigned
+                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[8px] text-slate-400 font-mono">
+                          <span>{l.zone ? l.zone.slice(0, 3).toUpperCase() : 'MED'}</span>
+                          <span className="font-extrabold text-slate-700">₹{l.rentalFee}</span>
+                        </div>
+                        <div className="text-xs font-mono font-black text-slate-900 my-0.5">{l.lockerNumber}</div>
+                        <div className="text-[8px] font-extrabold">
+                          {isSelected ? (
+                            <span className="text-emerald-700 bg-emerald-100 px-1 rounded text-[8px]">✓ Selected</span>
+                          ) : isAssigned ? (
+                            <span className="text-slate-400 text-[8px]">Occupied</span>
+                          ) : (
+                            <span className="text-emerald-600 text-[8px]">Available</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. COSTUMES & TOWELS PICKER CARD (COMPACT BOTTOM PANEL) */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-2 shadow-2xs shrink-0 space-y-1">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                  <Shirt size={13} className="text-indigo-600" /> Swimwear & Towels
+                </h3>
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Selected: <b className="text-slate-900">{selectedCostumes.reduce((sum, c) => sum + c.quantity, 0)} items</b>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                {(costumesList || []).map((c) => {
+                  const costumeId = c.id || c.code;
+                  const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
+                  const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
+                  return (
+                    <div key={c.id || c.code} className="p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-1.5">
+                      <div className="min-w-0">
+                        <div className="text-xs font-extrabold text-slate-900 truncate">{c.name}</div>
+                        <div className="text-[10px] text-slate-500">
+                          Rent: <b className="text-slate-800">₹{c.rentalFee}</b> • Dep: <b className="text-amber-600">₹{c.securityDeposit}</b>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shrink-0 shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
+                          className="w-4 h-4 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
+                          disabled={qty === 0}
+                        >
+                          -
+                        </button>
+                        <span className="w-4 text-center font-black text-slate-900 text-xs">{qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCostumeQty(c, qty + 1)}
+                          className="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 cursor-pointer shadow-2xs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDEBAR COLUMN (4 cols): RENTAL SUMMARY & CHECKOUT */}
+          <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex flex-col justify-between overflow-hidden">
+            <div className="space-y-2 min-h-0 overflow-y-auto pr-1">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Receipt size={14} className="text-indigo-600" /> Rental Summary & Charges
+                </h3>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                  selectedCustomer ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {selectedCustomer ? selectedCustomer.name : 'No Guest'}
+                </span>
+              </div>
+
+              {!selectedCustomer && (
+                <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                  <AlertTriangle size={14} className="shrink-0 text-amber-600" />
+                  <span>Select guest profile from top search bar for receipt & wristband tag.</span>
+                </div>
+              )}
+
+              {/* Itemized Charges List */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                  <span className="text-slate-500 font-semibold">Locker(s) Selected:</span>
+                  <span className="font-extrabold text-slate-900 font-mono">
+                    {selectedLockerIds.length > 0 ? selectedLockerIds.join(', ') : 'None'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                  <span className="text-slate-500 font-semibold">Costumes & Towels:</span>
+                  <span className="font-extrabold text-slate-900 font-mono">
+                    {selectedCostumes.length > 0
+                      ? selectedCostumes.map(c => `${c.name} (${c.quantity})`).join(', ')
+                      : 'No costume selected'}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs">
-                  {['All', 'available', 'assigned'].map((st) => (
+                <div className="pt-1.5 space-y-1">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Total Rental Fee:</span>
+                    <span className="font-extrabold text-slate-900 font-mono">₹{totalRentalFee}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700">
+                    <span>Caution Deposit (Refundable):</span>
+                    <span className="font-extrabold text-amber-700 font-mono">₹{totalCautionDeposit}</span>
+                  </div>
+                </div>
+
+                {/* Grand Total Banner */}
+                <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between mt-2">
+                  <div>
+                    <div className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider">Grand Total Paid:</div>
+                    <div className="text-xs text-indigo-500 font-medium">Incl. all taxes & deposit</div>
+                  </div>
+                  <div className="text-xl font-black text-indigo-600 font-mono">₹{grandTotalToPay}</div>
+                </div>
+              </div>
+
+              {/* Payment Mode Selector */}
+              <div className="space-y-1 pt-1">
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Payment Method</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['UPI', 'Cash', 'Card'].map(method => (
                     <button
-                      key={st}
+                      key={method}
                       type="button"
-                      onClick={() => setLockerStatusFilter(st)}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
-                        lockerStatusFilter === st
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      onClick={() => setPaymentMethod(method)}
+                      className={`py-1.5 text-xs font-extrabold rounded-xl border cursor-pointer transition ${
+                        paymentMethod === method
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
-                      {st === 'All' ? 'All Status' : st === 'available' ? '• Available' : '• Occupied'}
+                      {method}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Locker Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 max-h-64 overflow-y-auto pr-1">
-                {/* No Locker Button */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedLockerIds([])}
-                  className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                    selectedLockerIds.length === 0
-                      ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                  }`}
-                >
-                  <div className="text-xs font-extrabold text-slate-900">No Locker</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">Costumes only</div>
-                </button>
-
-                {filteredLockers.map((l) => {
-                  const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                  const locId = l.id || l.lockerNumber;
-                  const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
-                  return (
-                    <button
-                      key={l.id || l.lockerNumber}
-                      type="button"
-                      disabled={isAssigned}
-                      onClick={() => handleToggleLocker(l)}
-                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer relative ${
-                        isSelected
-                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 shadow-md font-bold'
-                          : isAssigned
-                          ? 'bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-70'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
-                      }`}
-                    >
-                      <div className="text-xs font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                      <div className="text-[11px] font-extrabold text-slate-700 mt-0.5">₹{l.rentalFee + l.securityDeposit}</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5 truncate">{l.zone || 'Medium'}</div>
-                      <div className="text-[10px] mt-1.5 font-extrabold">
-                        {isSelected ? (
-                          <span className="text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full text-[9px]">✓ Selected</span>
-                        ) : isAssigned ? (
-                          <span className="text-amber-700 text-[9px]">• Occupied</span>
-                        ) : (
-                          <span className="text-emerald-600 text-[9px]">• Available</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {filteredLockers.length === 0 && (
-                  <div className="col-span-full py-6 text-center text-slate-400 text-xs">
-                    No lockers found matching search & zone filter.
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Section 3: Add Items Table */}
-            <div id="sec-items" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-800">Add Items</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px] tracking-wider">
-                    <tr>
-                      <th className="pb-3">Item</th>
-                      <th className="pb-3 text-center">Rent</th>
-                      <th className="pb-3 text-center">Qty</th>
-                      <th className="pb-3 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(costumesList || []).map((c) => {
-                      const costumeId = c.id || c.code;
-                      const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
-                      const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
-                      return (
-                        <tr key={c.id || c.code} className="hover:bg-slate-50/60 transition">
-                          <td className="py-3 font-semibold text-slate-800 flex items-center gap-2">
-                            <Shirt size={14} className="text-indigo-600" />
-                            {c.name} ({c.size || 'M'})
-                          </td>
-                          <td className="py-3 text-center font-bold text-slate-700">₹{c.rentalFee}</td>
-                          <td className="py-3 text-center">
-                            <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-1">
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                                className="w-6 h-6 rounded-lg bg-white text-slate-700 flex items-center justify-center font-bold shadow-2xs hover:bg-slate-200 transition cursor-pointer disabled:opacity-40"
-                                disabled={qty === 0}
-                              >
-                                -
-                              </button>
-                              <span className="w-4 text-center font-extrabold text-slate-800">{qty}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                                className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-2xs hover:bg-emerald-700 transition cursor-pointer"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-3 text-right font-black text-emerald-600 text-sm">
-                            ₹{c.rentalFee * qty}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Section 4: Bottom Payment Bar */}
-            <div id="sec-payment" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-6">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rental Fee</span>
-                    <span className="text-lg font-black text-emerald-600">₹{totalRentalFee}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Deposit (Refundable)</span>
-                    <span className="text-lg font-black text-amber-600">₹{totalDepositHeld}</span>
-                  </div>
-                  <div className="border-l border-slate-200 pl-6">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Payable</span>
-                    <span className="text-2xl font-black text-indigo-700">₹{grandTotalPaid}</span>
-                  </div>
-                </div>
-
-                {/* Payment Method Selector */}
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 text-center">Payment Method</span>
-                  <div className="flex items-center gap-2">
-                    {[
-                      { id: 'UPI', label: 'UPI', icon: Smartphone },
-                      { id: 'Cash', label: 'Cash', icon: Banknote },
-                      { id: 'Card', label: 'Card', icon: CreditCard },
-                    ].map((pm) => {
-                      const IconComp = pm.icon;
-                      return (
-                        <button
-                          key={pm.id}
-                          type="button"
-                          onClick={() => setPaymentMode(pm.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 cursor-pointer ${
-                            paymentMode === pm.id
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <IconComp size={13} /> {pm.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary Action Button */}
+            {/* Issue Button */}
+            <div className="pt-2 shrink-0 border-t border-slate-100">
               <button
                 type="button"
-                onClick={handleIssueSubmit}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base rounded-2xl shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2 cursor-pointer"
+                onClick={handleIssueLocker}
+                disabled={selectedLockerIds.length === 0 && selectedCostumes.length === 0}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer size={18} /> Issue Locker & Print Receipt ₹{grandTotalPaid}
+                <Printer size={15} /> Issue Locker & Print Receipt (₹{grandTotalToPay})
               </button>
             </div>
           </div>
-
-          {/* Active Rentals Side Drawer (Right) */}
-          {showActiveDrawer && (
-            <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 shrink-0">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                  Active Rentals <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-mono">{activeIssues.length}</span>
-                </h3>
-                <button onClick={() => setShowActiveDrawer(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                  <X size={16} />
-                </button>
-              </div>
-
-              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-                {activeIssues.map((issue) => (
-                  <div key={issue.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="text-sm font-extrabold text-slate-900">{issue.guestName || issue.guest_name || 'Amit Sharma'}</h4>
-                        <p className="text-xs font-bold text-indigo-600 mt-0.5">
-                          Locker: {issue.lockerNumber || 'L-101'}
-                        </p>
-                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          {issue.customerCode || 'CST-1001'} • Room {issue.roomNumber || '101'}
-                        </p>
-                      </div>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                        Active
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 text-xs text-slate-700 pt-2 border-t border-slate-200/80">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Items</span>
-                      {(issue.costumes || []).map((c, i) => (
-                        <div key={i} className="flex justify-between">
-                          <span>{c.name || 'Gents Swim Costume (L)'}</span>
-                          <b className="font-mono">x{c.quantity || 1}</b>
-                        </div>
-                      ))}
-                      {(!issue.costumes || issue.costumes.length === 0) && (
-                        <div className="flex justify-between text-slate-500">
-                          <span>Standard Swimwear (L)</span>
-                          <b className="font-mono">x1</b>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 text-xs pt-2 border-t border-slate-200/80">
-                      <div className="flex justify-between text-slate-600">
-                        <span>Rental</span>
-                        <b className="text-slate-900 font-extrabold">₹{issue.totalRentalFee || 100}</b>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Deposit (Refundable)</span>
-                        <b className="text-amber-600 font-extrabold">₹{issue.totalDepositHeld || 100}</b>
-                      </div>
-                      <div className="flex justify-between text-indigo-700 font-black pt-1 border-t border-slate-200">
-                        <span>Total Paid</span>
-                        <span>₹{issue.grandTotalPaid || 200}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReturnModalIssue(issue);
-                        setDamageFine(0);
-                        setReturnNotes('');
-                      }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-amber-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <RotateCcw size={14} /> Refund Deposit ₹{issue.totalDepositHeld || 200}
-                    </button>
-                  </div>
-                ))}
-
-                {activeIssues.length === 0 && (
-                  <div className="p-6 text-center text-slate-400 space-y-2">
-                    <ShoppingBag size={28} className="mx-auto text-slate-300" />
-                    <p className="text-xs font-semibold">No Active Rentals</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* =========================================================================
-         MODE 2: 🗂️ MULTI-TAB REGISTERS (Clean 4-Tab View)
-         ========================================================================= */}
-      {currentMode === 'tabs' && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-200 bg-white p-1.5 rounded-2xl shadow-2xs">
-            <button
-              onClick={() => setActiveTab('issue')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'issue' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Key size={15} /> Issue Counter
-            </button>
-            <button
-              onClick={() => setActiveTab('returns')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'returns' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <RotateCcw size={15} /> Returns & Refunds ({activeIssues.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('lockers_grid')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'lockers_grid' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Hash size={15} /> Visual Locker Grid
-            </button>
-            <button
-              onClick={() => setActiveTab('costumes_stock')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'costumes_stock' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Shirt size={15} /> Stock Catalog
-            </button>
-          </div>
-
-          {/* Tab 1: Issue Counter */}
-          {activeTab === 'issue' && (
-            <div className="space-y-4">
-              {/* Customer Search Card */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-                <h3 className="text-sm font-bold text-slate-800">Search Customer</h3>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Search by Mobile, Customer ID, Room No, or Wristband..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (filteredCustomers.length > 0) {
-                            handleSelectCustomer(filteredCustomers[0]);
-                          } else if (searchQuery.trim()) {
-                            handleSelectCustomer({
-                              customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                              name: searchQuery.trim(),
-                              phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                              roomNumber: '101',
-                              wristbandId: 'W-7854'
-                            });
-                          }
-                        }
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (filteredCustomers.length > 0) {
-                        handleSelectCustomer(filteredCustomers[0]);
-                      } else if (searchQuery.trim()) {
-                        handleSelectCustomer({
-                          customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                          name: searchQuery.trim(),
-                          phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                          roomNumber: '101',
-                          wristbandId: 'W-7854'
-                        });
-                      }
-                    }}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Search size={14} /> Search
-                  </button>
-                </div>
-
-                {selectedCustomer ? (
-                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-200">
-                        {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-extrabold text-slate-900">{selectedCustomer.name}</span>
-                          <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Active</span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          <b className="font-mono text-emerald-700">{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
-                        </p>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => setSelectedCustomer(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
-                      <X size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
-                    <AlertTriangle size={15} className="text-amber-600 shrink-0" />
-                    <span>Search above by <b>Customer ID</b> or type guest name/phone & press <b>Enter</b></span>
-                  </div>
-                )}
-              </div>
-
-              {/* Locker Grid & Items */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Locker Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800">Select Locker</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(lockersList || []).slice(0, 6).map((l) => {
-                      const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                      const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
-                      return (
-                        <button
-                          key={l.id || l.lockerNumber}
-                          type="button"
-                          disabled={isAssigned}
-                          onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
-                          className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 shadow-sm font-bold'
-                              : isAssigned
-                              ? 'bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-70'
-                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
-                          }`}
-                        >
-                          <div className="text-xs font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                          <div className="text-[11px] font-extrabold text-slate-700">₹{l.rentalFee + l.securityDeposit}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Items Table Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800">Add Items</h3>
-                  <div className="space-y-2">
-                    {(costumesList || []).map((c) => {
-                      const costumeId = c.id || c.code;
-                      const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
-                      const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
-                      return (
-                        <div key={c.id || c.code} className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                          <span className="font-semibold text-slate-800">{c.name} (₹{c.rentalFee})</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                              className="w-5 h-5 rounded bg-white text-slate-700 font-bold border border-slate-200 flex items-center justify-center cursor-pointer"
-                            >
-                              -
-                            </button>
-                            <span className="font-bold w-4 text-center">{qty}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                              className="w-5 h-5 rounded bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Payment Bar */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 text-xs font-bold">
-                  <span>Rental: <b className="text-emerald-600">₹{totalRentalFee}</b></span>
-                  <span>Deposit: <b className="text-amber-600">₹{totalDepositHeld}</b></span>
-                  <span>Total: <b className="text-indigo-600 text-sm">₹{grandTotalPaid}</b></span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleIssueSubmit}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
-                >
-                  <Printer size={14} /> Issue Locker & Receipt ₹{grandTotalPaid}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Returns & Caution Refunds */}
-          {activeTab === 'returns' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Active Rentals & Pending Caution Refunds</h3>
-                <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
-                  {activeIssues.length} Active
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
-                    <tr>
-                      <th className="pb-3">Guest Name</th>
-                      <th className="pb-3">Customer ID</th>
-                      <th className="pb-3 text-center">Locker</th>
-                      <th className="pb-3 text-center">Deposit Held</th>
-                      <th className="pb-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {activeIssues.map((issue) => (
-                      <tr key={issue.id} className="hover:bg-slate-50 transition">
-                        <td className="py-3 font-bold text-slate-900">{issue.guestName || issue.guest_name}</td>
-                        <td className="py-3 font-mono text-indigo-600">{issue.customerCode}</td>
-                        <td className="py-3 text-center font-bold text-slate-800">{issue.lockerNumber || 'N/A'}</td>
-                        <td className="py-3 text-center font-black text-amber-600">₹{issue.totalDepositHeld || 100}</td>
-                        <td className="py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReturnModalIssue(issue);
-                              setDamageFine(0);
-                              setReturnNotes('');
-                            }}
-                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <RotateCcw size={13} /> Refund Deposit ₹{issue.totalDepositHeld || 100}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {activeIssues.length === 0 && (
-                      <tr>
-                        <td colSpan="5" className="py-8 text-center text-slate-400 font-semibold">
-                          No Active Rentals currently pending return.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Visual Locker Grid */}
-          {activeTab === 'lockers_grid' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Visual Locker Grid Map</h3>
-                {isSuperAdmin && (
-                  <button onClick={() => setShowAddLockerModal(true)} className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
-                    + Add Locker
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {(lockersList || []).map((l) => (
-                  <div key={l.id || l.lockerNumber} className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center space-y-1">
-                    <div className="text-sm font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                    <div className="text-xs font-bold text-slate-700">₹{l.rentalFee + l.securityDeposit}</div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${l.status === 'assigned' || l.status === 'occupied' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {l.status === 'assigned' || l.status === 'occupied' ? 'Occupied' : 'Available'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tab 4: Stock Catalog */}
-          {activeTab === 'costumes_stock' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Swimwear & Costume Stock Catalog</h3>
-                {isSuperAdmin && (
-                  <button onClick={() => setShowAddCostumeModal(true)} className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
-                    + Add Costume Item
-                  </button>
-                )}
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
-                    <tr>
-                      <th className="pb-3">Code</th>
-                      <th className="pb-3">Costume Name</th>
-                      <th className="pb-3 text-center">Category</th>
-                      <th className="pb-3 text-center">Size</th>
-                      <th className="pb-3 text-center">Total Stock</th>
-                      <th className="pb-3 text-right">Rent Fee</th>
-                      <th className="pb-3 text-right">Deposit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(costumesList || []).map((c) => (
-                      <tr key={c.id || c.code} className="hover:bg-slate-50 transition">
-                        <td className="py-3 font-mono font-bold text-slate-900">{c.code}</td>
-                        <td className="py-3 font-bold text-indigo-700">{c.name}</td>
-                        <td className="py-3 text-center font-semibold text-slate-600">{c.category || 'Unisex'}</td>
-                        <td className="py-3 text-center font-bold text-slate-800">{c.size || 'M'}</td>
-                        <td className="py-3 text-center font-bold text-emerald-600">{c.totalStock || 30}</td>
-                        <td className="py-3 text-right font-black text-slate-900">₹{c.rentalFee}</td>
-                        <td className="py-3 text-right font-black text-amber-600">₹{c.securityDeposit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
