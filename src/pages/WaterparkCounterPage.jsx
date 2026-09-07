@@ -132,7 +132,7 @@ export default function WaterparkCounterPage() {
     );
   }
 
-  const subtotal = selectedTicket ? (selectedTicket.price * quantity) : 0;
+  const subtotal = selectedTicket ? (selectedTicket.price * (parseInt(quantity) || 0)) : 0;
 
   return (
     <div className="flex-1 flex overflow-hidden bg-slate-50">
@@ -210,10 +210,48 @@ export default function WaterparkCounterPage() {
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">Ticket Quantity</label>
-                  <div className="relative">
-                    <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="number" min="1" max="100" value={quantity} onChange={e => setQuantity(parseInt(e.target.value) || 1)} required
-                      className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(Math.max(1, (parseInt(quantity) || 1) - 1))}
+                      className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-black text-sm hover:bg-slate-200 transition cursor-pointer flex items-center justify-center shrink-0"
+                      title="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <div className="relative flex-1">
+                      <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={quantity}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setQuantity('');
+                          } else {
+                            const num = parseInt(val);
+                            setQuantity(isNaN(num) ? '' : num);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (!quantity || parseInt(quantity) < 1) {
+                            setQuantity(1);
+                          }
+                        }}
+                        required
+                        className="w-full pl-9 pr-2 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-extrabold text-slate-900"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((parseInt(quantity) || 0) + 1)}
+                      className="w-8 h-8 rounded-lg bg-emerald-600 border border-emerald-600 text-white font-black text-sm hover:bg-emerald-700 transition cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                      title="Increase quantity"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
                 <div>
