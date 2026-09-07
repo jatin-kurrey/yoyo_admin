@@ -358,9 +358,9 @@ export default function CostumeLockerPage() {
   const handleModeSwitch = (mode) => {
     dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: mode });
     const labels = {
-      express: '⚡ Express Counter',
-      tabs: '🗂️ Multi-Tab Registers',
-      enterprise: '🚀 Enterprise Management'
+      express: 'Express Counter',
+      tabs: 'Multi-Tab Registers',
+      enterprise: 'Enterprise Management'
     };
     showToast(`Switched to ${labels[mode]}`);
   };
@@ -443,7 +443,7 @@ export default function CostumeLockerPage() {
                 : 'bg-amber-50 border-amber-200 hover:bg-amber-100 text-amber-900'
             }`}
           >
-            <RotateCcw size={14} /> {expressSubMode === 'return' ? '⬅️ Back to Issue' : `Refund Deposit (${activeIssues.length})`}
+            <RotateCcw size={14} /> {expressSubMode === 'return' ? 'Back to Issue' : `Refund Deposit (${activeIssues.length})`}
           </button>
 
           {isSuperAdmin && (
@@ -452,9 +452,9 @@ export default function CostumeLockerPage() {
               onChange={(e) => handleModeSwitch(e.target.value)}
               className="bg-white border border-slate-200 text-slate-800 text-[11px] font-extrabold rounded-xl px-2 py-1 outline-none cursor-pointer"
             >
-              <option value="enterprise">🚀 Enterprise</option>
-              <option value="express">⚡ Express</option>
-              <option value="tabs">🗂️ Multi-Tab</option>
+              <option value="enterprise">Enterprise</option>
+              <option value="express">Express</option>
+              <option value="tabs">Multi-Tab</option>
             </select>
           )}
         </div>
@@ -582,7 +582,7 @@ export default function CostumeLockerPage() {
                       </span>
                       {selectedCustomer.waterparkTickets && (
                         <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.2 rounded font-mono">
-                          🎫 {selectedCustomer.waterparkTickets.bookingRef} ({selectedCustomer.waterparkTickets.totalCount} Tickets)
+                          Ticket #{selectedCustomer.waterparkTickets.bookingRef} ({selectedCustomer.waterparkTickets.totalCount} Tickets)
                         </span>
                       )}
                     </div>
@@ -610,78 +610,78 @@ export default function CostumeLockerPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-1.5 px-3 text-xs text-amber-800 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-1.5 text-[11px]">
-                  <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+              <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-2 px-3 text-xs text-amber-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <AlertTriangle size={15} className="text-amber-600 shrink-0" />
                   <span>Search guest profile by <b>Customer ID</b>, Phone, or Wristband in top search bar</span>
                 </div>
-                <span className="text-[9px] text-amber-600 font-semibold hidden sm:inline">Auto-Sync Active</span>
+                <span className="text-xs text-amber-600 font-semibold hidden sm:inline">Auto-Sync Active</span>
               </div>
             )}
 
             {/* 1. LOCKER SELECTION CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex flex-col space-y-2 shrink-0">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-2xs flex flex-col space-y-2.5 shrink-0">
               {/* Header with Title & Dual-View Toggle */}
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <Key size={16} className="text-indigo-600" /> Lockers Category
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Key size={18} className="text-indigo-600" /> Lockers Category
                   </h3>
-                  <span className="bg-emerald-50 text-emerald-700 font-mono font-bold text-xs px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <span className="bg-emerald-50 text-emerald-700 font-mono font-bold text-xs px-3 py-0.5 rounded-full border border-emerald-200">
                     {totalAvailableLockers} Available
                   </span>
                 </div>
 
                 {/* Dual-View Switcher Tabs */}
-                <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-extrabold border border-slate-200/60">
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200/60">
                   <button
                     type="button"
                     onClick={() => setLockerViewMode('quick')}
                     className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                       lockerViewMode === 'quick'
-                        ? 'bg-white text-indigo-600 shadow-2xs font-black'
+                        ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <Zap size={13} /> Quick Category (+/-)
+                    Quick Category (+/-)
                   </button>
                   <button
                     type="button"
                     onClick={() => setLockerViewMode('grid')}
                     className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                       lockerViewMode === 'grid'
-                        ? 'bg-white text-indigo-600 shadow-2xs font-black'
+                        ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <Key size={13} /> Visual Locker Grid
+                    Visual Locker Grid
                   </button>
                 </div>
               </div>
 
               {/* VIEW A: QUICK CATEGORY (+/-) */}
               {lockerViewMode === 'quick' ? (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      { key: 'Men', title: '👨 Men Changing Locker', rent: 100, dep: 100, avail: menAvailableLockers },
-                      { key: 'Ladies', title: '👩 Ladies Changing Locker', rent: 100, dep: 100, avail: ladiesAvailableLockers },
-                      { key: 'VIP', title: '👑 VIP Locker Room', rent: 150, dep: 100, avail: vipAvailableLockers },
-                      { key: 'Executive', title: '💼 Executive Locker', rent: 150, dep: 100, avail: execAvailableLockers }
+                      { key: 'Men', title: 'Men Changing Locker', rent: 100, dep: 100, avail: menAvailableLockers },
+                      { key: 'Ladies', title: 'Ladies Changing Locker', rent: 100, dep: 100, avail: ladiesAvailableLockers },
+                      { key: 'VIP', title: 'VIP Locker Room', rent: 150, dep: 100, avail: vipAvailableLockers },
+                      { key: 'Executive', title: 'Executive Locker', rent: 150, dep: 100, avail: execAvailableLockers }
                     ].map((cat) => {
                       const selectedInCat = getSelectedZoneLockers(cat.key);
                       const count = selectedInCat.length;
                       return (
-                        <div key={cat.key} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2.5 hover:bg-slate-100/60 transition">
+                        <div key={cat.key} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-100/60 transition">
                           <div className="min-w-0">
-                            <div className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                            <div className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                               <span>{cat.title}</span>
                               <span className="text-xs bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-md">
                                 {cat.avail} Available
                               </span>
                             </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                              Rent: <b className="text-slate-800">₹{cat.rent}</b> • Deposit: <b className="text-amber-600">₹{cat.dep}</b>
+                            <div className="text-xs text-slate-600 mt-1 font-medium">
+                              Rent: <b className="text-slate-900">₹{cat.rent}</b> • Deposit: <b className="text-amber-700">₹{cat.dep}</b>
                             </div>
                           </div>
 
@@ -691,16 +691,16 @@ export default function CostumeLockerPage() {
                               type="button"
                               onClick={() => handleRemoveZoneLocker(cat.key)}
                               disabled={count === 0}
-                              className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-sm hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
+                              className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-black text-base hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
                             >
                               -
                             </button>
-                            <span className="w-6 text-center font-black text-slate-900 text-sm">{count}</span>
+                            <span className="w-7 text-center font-black text-slate-900 text-base">{count}</span>
                             <button
                               type="button"
                               onClick={() => handleAddZoneLocker(cat.key)}
                               disabled={cat.avail === 0}
-                              className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-2xs transition"
+                              className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-2xs transition"
                             >
                               +
                             </button>
@@ -713,7 +713,7 @@ export default function CostumeLockerPage() {
                   {/* Selected Lockers Tag Pills */}
                   {selectedLockerIds.length > 0 && (
                     <div className="p-2 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center gap-2">
-                      <span className="text-xs font-extrabold text-indigo-700 uppercase tracking-wider shrink-0">
+                      <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider shrink-0">
                         Selected ({selectedLockerIds.length}):
                       </span>
                       <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -740,16 +740,16 @@ export default function CostumeLockerPage() {
                   <div className="flex items-center gap-1.5 overflow-x-auto shrink-0 border-b border-slate-100 pb-1.5">
                     {[
                       { id: 'All', label: `All (${totalAvailableLockers})` },
-                      { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
-                      { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
-                      { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
-                      { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
+                      { id: 'Men', label: `Men (${menAvailableLockers})` },
+                      { id: 'Ladies', label: `Ladies (${ladiesAvailableLockers})` },
+                      { id: 'VIP', label: `VIP (${vipAvailableLockers})` },
+                      { id: 'Executive', label: `Exec (${execAvailableLockers})` },
                     ].map((z) => (
                       <button
                         key={z.id}
                         type="button"
                         onClick={() => setSelectedZoneFilter(z.id)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer shrink-0 ${
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
                           selectedZoneFilter === z.id
                             ? 'bg-indigo-600 text-white shadow-xs'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -772,7 +772,7 @@ export default function CostumeLockerPage() {
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                         }`}
                       >
-                        <div className="text-xs font-extrabold">No Locker</div>
+                        <div className="text-xs font-bold">No Locker</div>
                         <div className="text-[10px] text-slate-400">Costumes</div>
                       </button>
 
@@ -799,9 +799,9 @@ export default function CostumeLockerPage() {
                               <span className="font-extrabold text-slate-700">₹{l.rentalFee}</span>
                             </div>
                             <div className="text-sm font-mono font-black text-slate-900 my-0.5">{l.lockerNumber}</div>
-                            <div className="text-[9px] font-extrabold">
+                            <div className="text-[9px] font-bold">
                               {isSelected ? (
-                                <span className="text-emerald-700 bg-emerald-100 px-1 rounded">✓ Selected</span>
+                                <span className="text-emerald-700 bg-emerald-100 px-1 rounded">Selected</span>
                               ) : isAssigned ? (
                                 <span className="text-slate-400">Occupied</span>
                               ) : (
@@ -818,33 +818,33 @@ export default function CostumeLockerPage() {
             </div>
 
             {/* 2. COSTUMES & TOWELS PICKER CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex-1 min-h-0 flex flex-col space-y-2 overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 shrink-0">
-                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Shirt size={16} className="text-indigo-600" /> Swimwear & Towels
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-2xs flex-1 min-h-0 flex flex-col space-y-2.5 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2 shrink-0">
+                <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Shirt size={18} className="text-indigo-600" /> Swimwear & Towels
                 </h3>
-                <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs text-slate-600 font-semibold bg-slate-100 px-3 py-0.5 rounded-full">
                   Selected: <b className="text-slate-900">{selectedCostumes.reduce((sum, c) => sum + c.quantity, 0)} items</b>
                 </span>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(costumesList || []).map((c) => {
                     const costumeId = c.id || c.code;
                     const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
                     const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
                     return (
-                      <div key={c.id || c.code} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2.5 hover:bg-slate-100/60 transition">
+                      <div key={c.id || c.code} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-100/60 transition">
                         <div className="min-w-0">
-                          <div className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <div className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                             <span className="truncate">{c.name}</span>
                             <span className="text-xs bg-indigo-100 text-indigo-800 font-bold px-1.5 rounded-md">
                               {c.size || 'M'}
                             </span>
                           </div>
-                          <div className="text-xs text-slate-500 mt-1 font-medium">
-                            Rent: <b className="text-slate-800">₹{c.rentalFee}</b> • Dep: <b className="text-amber-600">₹{c.securityDeposit}</b> • Stock: <b className="text-emerald-700">{c.totalStock || 40}</b>
+                          <div className="text-xs text-slate-600 mt-1 font-medium">
+                            Rent: <b className="text-slate-900">₹{c.rentalFee}</b> • Dep: <b className="text-amber-700">₹{c.securityDeposit}</b> • Stock: <b className="text-emerald-700">{c.totalStock || 40}</b>
                           </div>
                         </div>
 
@@ -852,16 +852,16 @@ export default function CostumeLockerPage() {
                           <button
                             type="button"
                             onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                            className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-sm hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
+                            className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-black text-base hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
                             disabled={qty === 0}
                           >
                             -
                           </button>
-                          <span className="w-6 text-center font-black text-slate-900 text-sm">{qty}</span>
+                          <span className="w-7 text-center font-black text-slate-900 text-base">{qty}</span>
                           <button
                             type="button"
                             onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                            className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm hover:bg-indigo-700 cursor-pointer shadow-2xs transition"
+                            className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-base hover:bg-indigo-700 cursor-pointer shadow-2xs transition"
                           >
                             +
                           </button>
@@ -875,13 +875,13 @@ export default function CostumeLockerPage() {
           </div>
 
           {/* RIGHT SIDEBAR COLUMN (4 cols): RENTAL SUMMARY & CHECKOUT */}
-          <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex flex-col justify-between overflow-hidden">
-            <div className="space-y-2 min-h-0 overflow-y-auto pr-1">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Receipt size={14} className="text-indigo-600" /> Rental Summary & Charges
+          <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex flex-col justify-between overflow-hidden">
+            <div className="space-y-3 min-h-0 overflow-y-auto pr-1">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Receipt size={18} className="text-indigo-600" /> Rental Summary
                 </h3>
-                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                   selectedCustomer ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {selectedCustomer ? selectedCustomer.name : 'No Guest'}
@@ -889,60 +889,60 @@ export default function CostumeLockerPage() {
               </div>
 
               {!selectedCustomer && (
-                <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
-                  <AlertTriangle size={14} className="shrink-0 text-amber-600" />
-                  <span>Select guest profile from top search bar for receipt & wristband tag.</span>
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2 font-medium">
+                  <AlertTriangle size={15} className="shrink-0 text-amber-600" />
+                  <span>Select guest profile from search bar for receipt.</span>
                 </div>
               )}
 
               {/* Itemized Charges List */}
-              <div className="space-y-1.5 text-xs">
+              <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
-                  <span className="text-slate-500 font-semibold">Locker(s) Selected:</span>
+                  <span className="text-slate-600 font-medium">Locker(s) Selected:</span>
                   <span className="font-extrabold text-slate-900 font-mono">
                     {selectedLockerIds.length > 0 ? selectedLockerIds.join(', ') : 'None'}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
-                  <span className="text-slate-500 font-semibold">Costumes & Towels:</span>
-                  <span className="font-extrabold text-slate-900 font-mono">
+                  <span className="text-slate-600 font-medium">Costumes & Towels:</span>
+                  <span className="font-extrabold text-slate-900 font-mono truncate max-w-[160px] text-right">
                     {selectedCostumes.length > 0
                       ? selectedCostumes.map(c => `${c.name} (${c.quantity})`).join(', ')
-                      : 'No costume selected'}
+                      : 'None'}
                   </span>
                 </div>
 
-                <div className="pt-1.5 space-y-1">
-                  <div className="flex justify-between text-slate-600">
+                <div className="pt-1.5 space-y-1.5">
+                  <div className="flex justify-between text-slate-700">
                     <span>Total Rental Fee:</span>
-                    <span className="font-extrabold text-slate-900 font-mono">₹{totalRentalFee}</span>
+                    <span className="font-extrabold text-slate-900 font-mono text-sm">₹{totalRentalFee}</span>
                   </div>
-                  <div className="flex justify-between text-amber-700">
+                  <div className="flex justify-between text-amber-800">
                     <span>Caution Deposit (Refundable):</span>
-                    <span className="font-extrabold text-amber-700 font-mono">₹{totalDepositHeld}</span>
+                    <span className="font-extrabold text-amber-800 font-mono text-sm">₹{totalDepositHeld}</span>
                   </div>
                 </div>
 
                 {/* Grand Total Banner */}
-                <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between mt-2">
+                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between mt-2">
                   <div>
-                    <div className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider">Grand Total Paid:</div>
+                    <div className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Grand Total Paid:</div>
                     <div className="text-xs text-indigo-500 font-medium">Incl. all taxes & deposit</div>
                   </div>
-                  <div className="text-xl font-black text-indigo-600 font-mono">₹{grandTotalPaid}</div>
+                  <div className="text-3xl font-black text-indigo-600 font-mono">₹{grandTotalPaid}</div>
                 </div>
               </div>
 
               {/* Payment Mode Selector */}
-              <div className="space-y-1 pt-1">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Payment Method</label>
-                <div className="grid grid-cols-3 gap-1.5">
+              <div className="space-y-1.5 pt-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
                   {['UPI', 'Cash', 'Card'].map(method => (
                     <button
                       key={method}
                       type="button"
                       onClick={() => setPaymentMode(method)}
-                      className={`py-1.5 text-xs font-extrabold rounded-xl border cursor-pointer transition ${
+                      className={`py-2 text-xs font-extrabold rounded-xl border cursor-pointer transition ${
                         paymentMode === method
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -956,20 +956,19 @@ export default function CostumeLockerPage() {
             </div>
 
             {/* Issue Button */}
-            <div className="pt-2 shrink-0 border-t border-slate-100">
+            <div className="pt-3 shrink-0 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleIssueSubmit}
                 disabled={selectedLockerIds.length === 0 && selectedCostumes.length === 0}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer size={15} /> Issue Locker & Print Receipt (₹{grandTotalPaid})
+                <Printer size={16} /> Issue Locker & Print Receipt (₹{grandTotalPaid})
               </button>
             </div>
           </div>
         </div>
       )}
-
       {/* PRINTABLE RECEIPT MODAL */}
       {receiptIssue && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1134,10 +1133,10 @@ export default function CostumeLockerPage() {
                 <label className="block text-slate-700 font-bold mb-1.5">Quick Damage / Fine Presets:</label>
                 <div className="grid grid-cols-2 gap-1.5 mb-2">
                   {[
-                    { label: '✓ No Damage (₹0)', amount: 0 },
-                    { label: '🔑 Lost Key (₹50)', amount: 50 },
-                    { label: '👕 Damaged Costume (₹100)', amount: 100 },
-                    { label: '🧼 Missing Towel (₹50)', amount: 50 },
+                    { label: 'No Damage (₹0)', amount: 0 },
+                    { label: 'Lost Key (₹50)', amount: 50 },
+                    { label: 'Damaged Costume (₹100)', amount: 100 },
+                    { label: 'Missing Towel (₹50)', amount: 50 },
                   ].map((preset) => (
                     <button
                       key={preset.label}
