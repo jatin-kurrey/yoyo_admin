@@ -619,16 +619,16 @@ export default function CostumeLockerPage() {
               </div>
             )}
 
-            {/* 1. LOCKER SELECTION CARD (DUAL VIEW: QUICK CATEGORY (+/-) & VISUAL GRID) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-2xs flex flex-col flex-1 min-h-0 overflow-hidden space-y-2">
+            {/* 1. LOCKER SELECTION CARD */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex flex-col space-y-2 shrink-0">
               {/* Header with Title & Dual-View Toggle */}
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 shrink-0">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Key size={14} className="text-indigo-600" /> Lockers Category
                   </h3>
                   <span className="bg-emerald-50 text-emerald-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-emerald-200">
-                    {totalAvailableLockers} Avail
+                    {totalAvailableLockers} Available
                   </span>
                 </div>
 
@@ -661,7 +661,7 @@ export default function CostumeLockerPage() {
 
               {/* VIEW A: QUICK CATEGORY (+/-) */}
               {lockerViewMode === 'quick' ? (
-                <div className="flex-1 min-h-0 flex flex-col justify-between overflow-y-auto pr-1 space-y-2">
+                <div className="space-y-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
                       { key: 'Men', title: '👨 Men Changing Locker', rent: 100, dep: 100, avail: menAvailableLockers },
@@ -672,11 +672,11 @@ export default function CostumeLockerPage() {
                       const selectedInCat = getSelectedZoneLockers(cat.key);
                       const count = selectedInCat.length;
                       return (
-                        <div key={cat.key} className="p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-100/60 transition">
+                        <div key={cat.key} className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-100/60 transition">
                           <div className="min-w-0">
                             <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                               <span>{cat.title}</span>
-                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 rounded">
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded">
                                 {cat.avail} Available
                               </span>
                             </div>
@@ -686,12 +686,12 @@ export default function CostumeLockerPage() {
                           </div>
 
                           {/* Counter Buttons */}
-                          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shrink-0 shadow-2xs">
+                          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shrink-0 shadow-2xs">
                             <button
                               type="button"
                               onClick={() => handleRemoveZoneLocker(cat.key)}
                               disabled={count === 0}
-                              className="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
+                              className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
                             >
                               -
                             </button>
@@ -700,7 +700,7 @@ export default function CostumeLockerPage() {
                               type="button"
                               onClick={() => handleAddZoneLocker(cat.key)}
                               disabled={cat.avail === 0}
-                              className="w-5 h-5 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-2xs"
+                              className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-2xs transition"
                             >
                               +
                             </button>
@@ -712,7 +712,7 @@ export default function CostumeLockerPage() {
 
                   {/* Selected Lockers Tag Pills */}
                   {selectedLockerIds.length > 0 && (
-                    <div className="p-1.5 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center gap-2 shrink-0">
+                    <div className="p-1.5 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center gap-2">
                       <span className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider shrink-0">
                         Selected ({selectedLockerIds.length}):
                       </span>
@@ -735,7 +735,7 @@ export default function CostumeLockerPage() {
                 </div>
               ) : (
                 /* VIEW B: VISUAL LOCKER GRID */
-                <div className="flex-1 min-h-0 flex flex-col space-y-1.5 overflow-hidden">
+                <div className="space-y-1.5 max-h-48 overflow-hidden flex flex-col">
                   {/* Category Zone Filter Pills */}
                   <div className="flex items-center gap-1 overflow-x-auto shrink-0 border-b border-slate-100 pb-1">
                     {[
@@ -761,7 +761,7 @@ export default function CostumeLockerPage() {
                   </div>
 
                   {/* Locker Cards Grid */}
-                  <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                  <div className="max-h-36 overflow-y-auto pr-1">
                     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-1.5">
                       <button
                         type="button"
@@ -817,52 +817,59 @@ export default function CostumeLockerPage() {
               )}
             </div>
 
-            {/* 2. COSTUMES & TOWELS PICKER CARD (COMPACT BOTTOM PANEL) */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-2 shadow-2xs shrink-0 space-y-1">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1">
-                  <Shirt size={13} className="text-indigo-600" /> Swimwear & Towels
+            {/* 2. COSTUMES & TOWELS PICKER CARD */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs flex-1 min-h-0 flex flex-col space-y-2 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 shrink-0">
+                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Shirt size={14} className="text-indigo-600" /> Swimwear & Towels
                 </h3>
-                <span className="text-[10px] text-slate-400 font-semibold">
+                <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
                   Selected: <b className="text-slate-900">{selectedCostumes.reduce((sum, c) => sum + c.quantity, 0)} items</b>
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                {(costumesList || []).map((c) => {
-                  const costumeId = c.id || c.code;
-                  const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
-                  const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
-                  return (
-                    <div key={c.id || c.code} className="p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-1.5">
-                      <div className="min-w-0">
-                        <div className="text-xs font-extrabold text-slate-900 truncate">{c.name}</div>
-                        <div className="text-[10px] text-slate-500">
-                          Rent: <b className="text-slate-800">₹{c.rentalFee}</b> • Dep: <b className="text-amber-600">₹{c.securityDeposit}</b>
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(costumesList || []).map((c) => {
+                    const costumeId = c.id || c.code;
+                    const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
+                    const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
+                    return (
+                      <div key={c.id || c.code} className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-100/60 transition">
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                            <span className="truncate">{c.name}</span>
+                            <span className="text-[9px] bg-indigo-100 text-indigo-800 font-bold px-1 rounded">
+                              {c.size || 'M'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            Rent: <b className="text-slate-800">₹{c.rentalFee}</b> • Dep: <b className="text-amber-600">₹{c.securityDeposit}</b> • Stock: <b className="text-emerald-700">{c.totalStock || 40}</b>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shrink-0 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
+                            className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer transition"
+                            disabled={qty === 0}
+                          >
+                            -
+                          </button>
+                          <span className="w-5 text-center font-black text-slate-900 text-xs">{qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCostumeQty(c, qty + 1)}
+                            className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 cursor-pointer shadow-2xs transition"
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shrink-0 shadow-2xs">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                          className="w-4 h-4 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
-                          disabled={qty === 0}
-                        >
-                          -
-                        </button>
-                        <span className="w-4 text-center font-black text-slate-900 text-xs">{qty}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                          className="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 cursor-pointer shadow-2xs"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
