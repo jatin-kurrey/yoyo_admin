@@ -325,9 +325,11 @@ function reducer(state, action) {
       let updatedCostumes = [...(state.costumes || [])];
       let updatedCustomers = [...(state.customers || [])];
 
-      // 1. Assign Locker
-      if (issue.lockerNumber) {
-        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === issue.lockerNumber);
+      // 1. Assign Lockers (support multi-locker selection)
+      const lockerNumsToAssign = issue.lockerNumbers || (issue.lockerNumber ? issue.lockerNumber.split(',').map(s => s.trim()) : []);
+      lockerNumsToAssign.forEach(locNum => {
+        if (!locNum) return;
+        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === locNum || l.id === locNum);
         if (lIdx >= 0) {
           updatedLockers[lIdx] = {
             ...updatedLockers[lIdx],
@@ -337,7 +339,7 @@ function reducer(state, action) {
             assignedCustomerCode: issue.customerCode,
           };
         }
-      }
+      });
 
       // 2. Deduct Costume Available Stock
       (issue.costumes || []).forEach(c => {
@@ -384,9 +386,11 @@ function reducer(state, action) {
       let updatedCostumes = [...(state.costumes || [])];
       let updatedCustomers = [...(state.customers || [])];
 
-      // 1. Release Locker
-      if (targetIssue.lockerNumber) {
-        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === targetIssue.lockerNumber);
+      // 1. Release Lockers (support multi-locker release)
+      const lockerNumsToRelease = targetIssue.lockerNumbers || (targetIssue.lockerNumber ? targetIssue.lockerNumber.split(',').map(s => s.trim()) : []);
+      lockerNumsToRelease.forEach(locNum => {
+        if (!locNum) return;
+        const lIdx = updatedLockers.findIndex(l => l.lockerNumber === locNum || l.id === locNum);
         if (lIdx >= 0) {
           updatedLockers[lIdx] = {
             ...updatedLockers[lIdx],
@@ -396,7 +400,7 @@ function reducer(state, action) {
             assignedCustomerCode: '',
           };
         }
-      }
+      });
 
       // 2. Restore Costume Available Stock
       (targetIssue.costumes || []).forEach(c => {

@@ -29,7 +29,7 @@ export default function CostumeLockerPage() {
   const [loading, setLoading] = useState(false);
 
   // Issue Form state
-  const [selectedLockerId, setSelectedLockerId] = useState('');
+  const [selectedLockerIds, setSelectedLockerIds] = useState([]); // Array of selected locker numbers/ids
   const [selectedCostumes, setSelectedCostumes] = useState([]); // [{ costumeId, code, name, quantity, rentalFee, deposit }]
   const [paymentMode, setPaymentMode] = useState('UPI');
   const [notes, setNotes] = useState('');
@@ -48,6 +48,13 @@ export default function CostumeLockerPage() {
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('All');
   const [lockerSearchQuery, setLockerSearchQuery] = useState('');
   const [lockerStatusFilter, setLockerStatusFilter] = useState('All');
+
+  // Live Zone Available Counts
+  const totalAvailableLockers = (lockersList || []).filter(l => l.status !== 'assigned' && l.status !== 'occupied').length;
+  const menAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('Men') && l.status !== 'assigned' && l.status !== 'occupied').length;
+  const ladiesAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('Ladies') && l.status !== 'assigned' && l.status !== 'occupied').length;
+  const vipAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('VIP') && l.status !== 'assigned' && l.status !== 'occupied').length;
+  const execAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('Executive') && l.status !== 'assigned' && l.status !== 'occupied').length;
 
   // Add Costume Modal state
   const [showAddCostumeModal, setShowAddCostumeModal] = useState(false);
@@ -126,6 +133,16 @@ export default function CostumeLockerPage() {
     showToast(`Unified Profile Loaded: ${cust.name} (${cust.customerCode || 'Synced'})`);
   };
 
+  // Toggle multi-locker selection
+  const handleToggleLocker = (locker) => {
+    const locId = locker.lockerNumber || locker.id;
+    if (selectedLockerIds.includes(locId)) {
+      setSelectedLockerIds(selectedLockerIds.filter(id => id !== locId));
+    } else {
+      setSelectedLockerIds([...selectedLockerIds, locId]);
+    }
+  };
+
   // Update costume quantities
   const handleUpdateCostumeQty = (costume, qty) => {
     const costumeId = costume.id || costume.code;
@@ -153,10 +170,11 @@ export default function CostumeLockerPage() {
     }
   };
 
-  // Calculations for Issue
-  const selectedLockerObj = (lockersList || []).find(l => l.id === selectedLockerId || l.lockerNumber === selectedLockerId);
-  const lockerRentalFee = selectedLockerObj ? selectedLockerObj.rentalFee : 0;
-  const lockerDeposit = selectedLockerObj ? selectedLockerObj.securityDeposit : 0;
+  // Calculations for Multi-Locker Issue
+  const selectedLockerObjs = (lockersList || []).filter(l => selectedLockerIds.includes(l.id) || selectedLockerIds.includes(l.lockerNumber));
+  const lockerRentalFee = selectedLockerObjs.reduce((sum, l) => sum + (l.rentalFee || 100), 0);
+  const lockerDeposit = selectedLockerObjs.reduce((sum, l) => sum + (l.securityDeposit || 100), 0);
+  const lockerNumbersString = selectedLockerObjs.map(l => l.lockerNumber).join(', ');
 
   const costumesRentalTotal = selectedCostumes.reduce((acc, c) => acc + (c.rentalFee * c.quantity), 0);
   const costumesDepositTotal = selectedCostumes.reduce((acc, c) => acc + (c.deposit * c.quantity), 0);
@@ -172,8 +190,8 @@ export default function CostumeLockerPage() {
       showToast('Please search or select a customer profile first.', 'error');
       return;
     }
-    if (!selectedLockerId && selectedCostumes.length === 0) {
-      showToast('Select at least a locker or 1 costume item to issue.', 'error');
+    if (selectedLockerIds.length === 0 && selectedCostumes.length === 0) {
+      showToast('Select at least 1 locker or 1 costume item to issue.', 'error');
       return;
     }
 
@@ -183,8 +201,9 @@ export default function CostumeLockerPage() {
       guestPhone: selectedCustomer.phone,
       roomNumber: selectedCustomer.roomNumber || '',
       wristbandId: selectedCustomer.wristbandId || '',
-      lockerId: selectedLockerObj ? selectedLockerObj.id : '',
-      lockerNumber: selectedLockerObj ? selectedLockerObj.lockerNumber : '',
+      waterparkTickets: selectedCustomer.waterparkTickets || null,
+      lockerNumbers: selectedLockerObjs.map(l => l.lockerNumber),
+      lockerNumber: lockerNumbersString || 'No Locker',
       costumes: selectedCostumes,
       totalRentalFee,
       totalDepositHeld,
@@ -200,7 +219,7 @@ export default function CostumeLockerPage() {
         guest_phone: payload.guestPhone,
         room_number: payload.roomNumber,
         wristband_id: payload.wristbandId,
-        locker_id: payload.lockerId,
+        locker_id: lockerNumbersString,
         costumes: payload.costumes,
         payment_mode: payload.paymentMode,
         notes: payload.notes,
@@ -218,7 +237,7 @@ export default function CostumeLockerPage() {
     });
 
     // Reset Form
-    setSelectedLockerId('');
+    setSelectedLockerIds([]);
     setSelectedCostumes([]);
     setNotes('');
   };
@@ -294,7 +313,7 @@ export default function CostumeLockerPage() {
   const todayRentalRevenue = (issuesList || []).reduce((acc, i) => acc + (i.totalRentalFee || i.total_rental_fee || 0), 0);
 
   // Stepper progress state calculation
-  const currentStep = !selectedCustomer ? 1 : !selectedLockerId ? 2 : selectedCostumes.length === 0 ? 3 : 4;
+  const currentStep = !selectedCustomer ? 1 : selectedLockerIds.length === 0 ? 2 : selectedCostumes.length === 0 ? 3 : 4;
 
   const handleModeSwitch = (mode) => {
     dispatch({ type: 'SET_COSTUME_LOCKER_MODE', payload: mode });
@@ -605,42 +624,64 @@ export default function CostumeLockerPage() {
 
               {/* Selected Customer Card */}
               {selectedCustomer ? (
-                <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-200">
-                      {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-emerald-200">
+                        {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-slate-900">{selectedCustomer.name}</span>
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            Active Guest Profile
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          <b className="font-mono text-emerald-700">{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          Wristband Tag: {selectedCustomer.wristbandId || 'W-7854'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowHistoryModal(true)}
+                        className="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <History size={13} /> View Rental History
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(null)}
+                        className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Waterpark Tickets Summary Banner */}
+                  {selectedCustomer.waterparkTickets && (
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-xs text-indigo-950 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-extrabold text-slate-900">{selectedCustomer.name}</span>
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                          Active
+                        <span className="bg-indigo-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md">
+                          🎫 {selectedCustomer.waterparkTickets.bookingRef}
+                        </span>
+                        <span className="font-extrabold text-slate-800">
+                          {selectedCustomer.waterparkTickets.totalCount} Tickets ({selectedCustomer.waterparkTickets.adultTickets} Adult, {selectedCustomer.waterparkTickets.childTickets} Child)
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        <b className="font-mono text-emerald-700">{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
-                      </p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        Wristband: {selectedCustomer.wristbandId || 'W-7854'}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-emerald-700">Total: ₹{selectedCustomer.waterparkTickets.totalAmount}</span>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                          {selectedCustomer.waterparkTickets.status}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowHistoryModal(true)}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <History size={13} /> View Rental History
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCustomer(null)}
-                      className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
@@ -654,26 +695,32 @@ export default function CostumeLockerPage() {
             <div id="sec-locker" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  Select Locker
+                  Select Locker(s)
                   <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
-                    {filteredLockers.length} Lockers
+                    {filteredLockers.length} Lockers ({totalAvailableLockers} Available)
                   </span>
                 </h3>
 
                 {/* Zone Filter Tabs */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {['All', 'Men', 'Ladies', 'VIP', 'Executive'].map((z) => (
+                  {[
+                    { id: 'All', label: `All Zones (${totalAvailableLockers})` },
+                    { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
+                    { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
+                    { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
+                    { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
+                  ].map((z) => (
                     <button
-                      key={z}
+                      key={z.id}
                       type="button"
-                      onClick={() => setSelectedZoneFilter(z)}
+                      onClick={() => setSelectedZoneFilter(z.id)}
                       className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
-                        selectedZoneFilter === z
+                        selectedZoneFilter === z.id
                           ? 'bg-indigo-600 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      {z === 'All' ? 'All Zones' : z === 'Men' ? '👨 Men' : z === 'Ladies' ? '👩 Ladies' : z === 'VIP' ? '👑 VIP' : '💼 Exec'}
+                      {z.label}
                     </button>
                   ))}
                 </div>
@@ -715,9 +762,9 @@ export default function CostumeLockerPage() {
                 {/* No Locker Button */}
                 <button
                   type="button"
-                  onClick={() => setSelectedLockerId('')}
+                  onClick={() => setSelectedLockerIds([])}
                   className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                    selectedLockerId === ''
+                    selectedLockerIds.length === 0
                       ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
                       : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                   }`}
@@ -728,13 +775,14 @@ export default function CostumeLockerPage() {
 
                 {filteredLockers.map((l) => {
                   const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                  const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
+                  const locId = l.id || l.lockerNumber;
+                  const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
                   return (
                     <button
                       key={l.id || l.lockerNumber}
                       type="button"
                       disabled={isAssigned}
-                      onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
+                      onClick={() => handleToggleLocker(l)}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer relative ${
                         isSelected
                           ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-900 shadow-md font-bold'
@@ -1414,21 +1462,43 @@ export default function CostumeLockerPage() {
             </div>
 
             {selectedCustomer && (
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-4 mt-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                    {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+              <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2 mt-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                      {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900">{selectedCustomer.name}</span>
+                      <span className="text-[11px] text-slate-600 ml-2 font-mono">
+                        <b>{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs font-extrabold text-slate-900">{selectedCustomer.name}</span>
-                    <span className="text-[11px] text-slate-600 ml-2 font-mono">
-                      <b>{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
-                    </span>
-                  </div>
+                  <button type="button" onClick={() => setSelectedCustomer(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
+                    <X size={15} />
+                  </button>
                 </div>
-                <button type="button" onClick={() => setSelectedCustomer(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
-                  <X size={15} />
-                </button>
+
+                {/* Waterpark Ticket Info Banner */}
+                {selectedCustomer.waterparkTickets && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 text-xs text-indigo-950 flex flex-wrap items-center justify-between gap-2 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-indigo-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md">
+                        🎫 {selectedCustomer.waterparkTickets.bookingRef}
+                      </span>
+                      <span>
+                        {selectedCustomer.waterparkTickets.totalCount} Tickets ({selectedCustomer.waterparkTickets.adultTickets} Adult, {selectedCustomer.waterparkTickets.childTickets} Child)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-emerald-700">₹{selectedCustomer.waterparkTickets.totalAmount}</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        {selectedCustomer.waterparkTickets.status}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1479,26 +1549,32 @@ export default function CostumeLockerPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                      Select Locker
+                      Select Locker(s)
                       <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
-                        {filteredLockers.length} Lockers
+                        {filteredLockers.length} Lockers ({totalAvailableLockers} Available)
                       </span>
                     </h3>
 
                     {/* Zone Filter Tabs */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                      {['All', 'Men', 'Ladies', 'VIP', 'Executive'].map((z) => (
+                      {[
+                        { id: 'All', label: `All Zones (${totalAvailableLockers})` },
+                        { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
+                        { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
+                        { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
+                        { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
+                      ].map((z) => (
                         <button
-                          key={z}
+                          key={z.id}
                           type="button"
-                          onClick={() => setSelectedZoneFilter(z)}
+                          onClick={() => setSelectedZoneFilter(z.id)}
                           className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
-                            selectedZoneFilter === z
+                            selectedZoneFilter === z.id
                               ? 'bg-indigo-600 text-white shadow-xs'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          {z === 'All' ? 'All Zones' : z === 'Men' ? '👨 Men' : z === 'Ladies' ? '👩 Ladies' : z === 'VIP' ? '👑 VIP' : '💼 Exec'}
+                          {z.label}
                         </button>
                       ))}
                     </div>
@@ -1540,9 +1616,9 @@ export default function CostumeLockerPage() {
                     {/* No Locker Card */}
                     <button
                       type="button"
-                      onClick={() => setSelectedLockerId('')}
+                      onClick={() => setSelectedLockerIds([])}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                        selectedLockerId === ''
+                        selectedLockerIds.length === 0
                           ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
                           : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                       }`}
@@ -1554,13 +1630,14 @@ export default function CostumeLockerPage() {
                     {/* Locker Cards */}
                     {filteredLockers.map((l) => {
                       const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                      const isSelected = selectedLockerId === l.id || selectedLockerId === l.lockerNumber;
+                      const locId = l.id || l.lockerNumber;
+                      const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
                       return (
                         <button
                           key={l.id || l.lockerNumber}
                           type="button"
                           disabled={isAssigned}
-                          onClick={() => setSelectedLockerId(isSelected ? '' : (l.id || l.lockerNumber))}
+                          onClick={() => handleToggleLocker(l)}
                           className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
                             isSelected
                               ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold'
@@ -1577,6 +1654,15 @@ export default function CostumeLockerPage() {
                           <div className="flex items-center justify-between text-[10px] mt-2 pt-1.5 border-t border-slate-100">
                             <span>Rent: <b>₹{l.rentalFee}</b></span>
                             <span className="text-amber-600">Dep: <b>₹{l.securityDeposit}</b></span>
+                          </div>
+                          <div className="text-[10px] mt-1 font-extrabold">
+                            {isSelected ? (
+                              <span className="text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full text-[9px]">✓ Selected</span>
+                            ) : isAssigned ? (
+                              <span className="text-amber-700 text-[9px]">• Occupied</span>
+                            ) : (
+                              <span className="text-emerald-600 text-[9px]">• Available</span>
+                            )}
                           </div>
                         </button>
                       );
@@ -1661,13 +1747,17 @@ export default function CostumeLockerPage() {
                 )}
 
                 <div className="space-y-2 text-xs text-slate-600">
-                  <div className="flex justify-between">
-                    <span>Locker Selected:</span>
-                    <b className="text-slate-900">{selectedLockerObj ? `${selectedLockerObj.lockerNumber} (₹${selectedLockerObj.rentalFee})` : 'None'}</b>
+                  <div className="flex justify-between items-center">
+                    <span>Locker(s) Selected:</span>
+                    <b className="text-slate-900 font-mono">
+                      {selectedLockerObjs.length > 0
+                        ? `${selectedLockerObjs.map(l => l.lockerNumber).join(', ')}`
+                        : 'None'}
+                    </b>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Costumes & Towels Selected:</span>
-                    <b className="text-slate-900">{selectedCostumes.length > 0 ? `${selectedCostumes.length} item(s)` : 'No costume selected'}</b>
+                  <div className="flex justify-between items-center">
+                    <span>Costumes & Towels:</span>
+                    <b className="text-slate-900">{selectedCostumes.length > 0 ? `${selectedCostumes.reduce((sum, c) => sum + c.quantity, 0)} item(s)` : 'No costume selected'}</b>
                   </div>
                 </div>
 

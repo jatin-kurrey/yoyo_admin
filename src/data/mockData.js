@@ -409,9 +409,69 @@ export const mockPurchaseOrders = [
 ];
 
 export const mockCustomers = [
-  { id: 'CUST-1001', customerCode: 'CST-1001', name: 'Amit Sharma', phone: '+91 98765 11223', email: 'amit@gmail.com', roomNumber: '101', wristbandId: 'BAND-402', depositBalance: 200, unpaidBalance: 0 },
-  { id: 'CUST-1002', customerCode: 'CST-1002', name: 'Neha Verma', phone: '+91 98111 55443', email: 'neha@gmail.com', roomNumber: '', wristbandId: 'BAND-509', depositBalance: 150, unpaidBalance: 0 },
-  { id: 'CUST-1003', customerCode: 'CST-1003', name: 'Rohan Mehta', phone: '+91 97222 99887', email: 'rohan@gmail.com', roomNumber: '203', wristbandId: 'BAND-612', depositBalance: 0, unpaidBalance: 0 },
+  {
+    id: 'CUST-1001',
+    customerCode: 'CST-1001',
+    name: 'Amit Sharma',
+    phone: '+91 98765 11223',
+    email: 'amit@gmail.com',
+    roomNumber: '101',
+    wristbandId: 'BAND-402',
+    depositBalance: 200,
+    unpaidBalance: 0,
+    waterparkTickets: {
+      bookingRef: 'WP-8821',
+      adultTickets: 2,
+      childTickets: 1,
+      seniorTickets: 0,
+      totalCount: 3,
+      totalAmount: 1750,
+      status: 'Checked-In Valid',
+      issuedAt: '2026-09-07 10:15 AM'
+    }
+  },
+  {
+    id: 'CUST-1002',
+    customerCode: 'CST-1002',
+    name: 'Neha Verma',
+    phone: '+91 98111 55443',
+    email: 'neha@gmail.com',
+    roomNumber: '',
+    wristbandId: 'BAND-509',
+    depositBalance: 150,
+    unpaidBalance: 0,
+    waterparkTickets: {
+      bookingRef: 'WP-8845',
+      adultTickets: 1,
+      childTickets: 2,
+      seniorTickets: 0,
+      totalCount: 3,
+      totalAmount: 1500,
+      status: 'Checked-In Valid',
+      issuedAt: '2026-09-07 11:00 AM'
+    }
+  },
+  {
+    id: 'CUST-1003',
+    customerCode: 'CST-1003',
+    name: 'Rohan Mehta',
+    phone: '+91 97222 99887',
+    email: 'rohan@gmail.com',
+    roomNumber: '203',
+    wristbandId: 'BAND-612',
+    depositBalance: 0,
+    unpaidBalance: 0,
+    waterparkTickets: {
+      bookingRef: 'WP-8890',
+      adultTickets: 4,
+      childTickets: 0,
+      seniorTickets: 0,
+      totalCount: 4,
+      totalAmount: 2400,
+      status: 'Checked-In Valid',
+      issuedAt: '2026-09-07 11:45 AM'
+    }
+  },
 ];
 
 export const mockLockers = [
