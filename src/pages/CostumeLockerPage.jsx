@@ -910,19 +910,11 @@ export default function CostumeLockerPage() {
 
                         <div className="flex items-center flex-wrap gap-2 text-[11px] text-slate-600 font-medium">
                           <span className="flex items-center gap-1 font-mono">
-                            📱 <b>{selectedCustomer.phone || '+91 98765 11223'}</b>
+                            📱 Phone: <b>{selectedCustomer.phone || '+91 98765 11223'}</b>
                           </span>
                           <span>•</span>
                           <span className="flex items-center gap-1 font-mono text-indigo-700 font-bold">
                             🏷️ RFID: <b>{selectedCustomer.wristbandId || 'BAND-402'}</b>
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 text-slate-700">
-                            👥 Group: <b>{selectedCustomer.groupDetails || '2 Adults, 1 Kid'}</b>
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                            💳 Prepaid Balance: <b>₹{selectedCustomer.walletBalance || 1500}</b>
                           </span>
                         </div>
 
