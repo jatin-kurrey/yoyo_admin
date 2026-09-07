@@ -408,15 +408,19 @@ export default function CostumeLockerPage() {
   };
 
   // Search matches across Customers, Active Rentals, and Lockers
-  const matchingCustomers = (customers || []).filter(c =>
-    searchQuery.trim() && (
-      (c.customerCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.phone || '').includes(searchQuery) ||
-      (c.roomNumber || '').includes(searchQuery) ||
-      (c.wristbandId || '').toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const matchingCustomers = (customers || []).filter(c => {
+    if (!searchQuery.trim()) return false;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      (c.customerCode || '').toLowerCase().includes(q) ||
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').replace(/\D/g, '').includes(q.replace(/\D/g, '')) ||
+      (c.email || '').toLowerCase().includes(q) ||
+      (c.roomNumber || '').toLowerCase().includes(q) ||
+      (c.wristbandId || '').toLowerCase().includes(q) ||
+      (c.waterparkTickets?.bookingRef || '').toLowerCase().includes(q)
+    );
+  });
 
   const matchingActiveRentals = (activeIssues || []).filter(iss =>
     searchQuery.trim() && (

@@ -469,9 +469,30 @@ export const mockCustomers = [
       totalCount: 4,
       totalAmount: 2400,
       status: 'Checked-In Valid',
-      issuedAt: '2026-09-07 11:45 AM'
+      issuedAt: '2026-09-07 11:30 AM'
     }
   },
+  {
+    id: 'CUST-1004',
+    customerCode: 'CST-1004',
+    name: 'Jatin',
+    phone: '+91 97521 18437',
+    email: 'jatin@gmail.com',
+    roomNumber: '101',
+    wristbandId: 'BAND-780',
+    depositBalance: 0,
+    unpaidBalance: 0,
+    waterparkTickets: {
+      bookingRef: 'WP-9012',
+      adultTickets: 1,
+      childTickets: 0,
+      seniorTickets: 0,
+      totalCount: 1,
+      totalAmount: 500,
+      status: 'Checked-In Valid',
+      issuedAt: '2026-09-07 12:00 PM'
+    }
+  }
 ];
 
 export const mockLockers = [

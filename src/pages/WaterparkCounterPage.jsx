@@ -79,9 +79,24 @@ export default function WaterparkCounterPage() {
         
         // Auto-sync customer to Unified Customer Register
         const custCode = `CST-${Math.floor(1000 + Math.random() * 9000)}`;
+        const bookingRef = res.data?.booking_id || `WP-${Math.floor(1000 + Math.random() * 9000)}`;
+        const wristbandId = `BAND-${Math.floor(100 + Math.random() * 900)}`;
+
         dispatch({
           type: 'SYNC_CUSTOMER',
-          payload: { customerCode: custCode, name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim() }
+          payload: {
+            id: `CUST-${Date.now()}`,
+            customerCode: custCode,
+            name: guestName.trim(),
+            phone: guestPhone.trim(),
+            email: guestEmail.trim(),
+            wristbandId: wristbandId,
+            waterparkTickets: {
+              bookingRef: bookingRef,
+              quantity: parseInt(quantity) || 1,
+              visitDate: visitDate
+            }
+          }
         });
         try {
           await pmsService.syncWaterparkCustomer({ customer_code: custCode, name: guestName.trim(), phone: guestPhone.trim(), email: guestEmail.trim() });
