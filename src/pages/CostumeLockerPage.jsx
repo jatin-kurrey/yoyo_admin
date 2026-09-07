@@ -48,6 +48,7 @@ export default function CostumeLockerPage() {
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('All');
   const [lockerSearchQuery, setLockerSearchQuery] = useState('');
   const [lockerStatusFilter, setLockerStatusFilter] = useState('All');
+  const [lockerViewMode, setLockerViewMode] = useState('quick'); // 'quick' (+/- category) or 'grid' (virtual locker grid)
 
   // Live Zone Available Counts
   const totalAvailableLockers = (lockersList || []).filter(l => l.status !== 'assigned' && l.status !== 'occupied').length;
@@ -55,6 +56,45 @@ export default function CostumeLockerPage() {
   const ladiesAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('Ladies') && l.status !== 'assigned' && l.status !== 'occupied').length;
   const vipAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('VIP') && l.status !== 'assigned' && l.status !== 'occupied').length;
   const execAvailableLockers = (lockersList || []).filter(l => (l.zone || '').includes('Executive') && l.status !== 'assigned' && l.status !== 'occupied').length;
+
+  // Zone Locker Helpers for Quick (+/-) View
+  const getZoneLockers = (zoneKey) => {
+    return (lockersList || []).filter(l => (l.zone || '').toLowerCase().includes(zoneKey.toLowerCase()));
+  };
+  const getAvailableZoneLockers = (zoneKey) => {
+    return getZoneLockers(zoneKey).filter(l => l.status !== 'assigned' && l.status !== 'occupied');
+  };
+  const getSelectedZoneLockers = (zoneKey) => {
+    const zoneLockers = getZoneLockers(zoneKey);
+    return zoneLockers.filter(l => {
+      const locId = l.id || l.lockerNumber;
+      return selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
+    });
+  };
+
+  const handleAddZoneLocker = (zoneKey) => {
+    const avail = getAvailableZoneLockers(zoneKey);
+    const unselectedAvail = avail.filter(l => {
+      const locId = l.id || l.lockerNumber;
+      return !selectedLockerIds.includes(locId) && !selectedLockerIds.includes(l.lockerNumber);
+    });
+    if (unselectedAvail.length > 0) {
+      const nextLocker = unselectedAvail[0];
+      const locId = nextLocker.lockerNumber || nextLocker.id;
+      setSelectedLockerIds([...selectedLockerIds, locId]);
+    } else {
+      showToast(`No more available lockers in ${zoneKey} zone!`, 'error');
+    }
+  };
+
+  const handleRemoveZoneLocker = (zoneKey) => {
+    const selectedInZone = getSelectedZoneLockers(zoneKey);
+    if (selectedInZone.length > 0) {
+      const lastLocker = selectedInZone[selectedInZone.length - 1];
+      const locId = lastLocker.lockerNumber || lastLocker.id;
+      setSelectedLockerIds(selectedLockerIds.filter(id => id !== locId && id !== lastLocker.lockerNumber));
+    }
+  };
 
   // Add Costume Modal state
   const [showAddCostumeModal, setShowAddCostumeModal] = useState(false);
@@ -579,99 +619,202 @@ export default function CostumeLockerPage() {
               </div>
             )}
 
-            {/* 1. LOCKER SELECTION CARD (DIRECT CATEGORY TABS & INTERNAL GRID SCROLL) */}
+            {/* 1. LOCKER SELECTION CARD (DUAL VIEW: QUICK CATEGORY (+/-) & VISUAL GRID) */}
             <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-2xs flex flex-col flex-1 min-h-0 overflow-hidden space-y-2">
-              {/* Category / Zone Tabs */}
+              {/* Header with Title & Dual-View Toggle */}
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1">
-                    <Key size={13} className="text-indigo-600" /> Lockers Category
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key size={14} className="text-indigo-600" /> Lockers Category
                   </h3>
-                  <span className="bg-indigo-50 text-indigo-700 font-mono font-bold text-[10px] px-1.5 py-0.2 rounded-full">
+                  <span className="bg-emerald-50 text-emerald-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-emerald-200">
                     {totalAvailableLockers} Avail
                   </span>
                 </div>
 
-                {/* Direct Category Tabs */}
-                <div className="flex items-center gap-1 overflow-x-auto">
-                  {[
-                    { id: 'All', label: `All (${totalAvailableLockers})` },
-                    { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
-                    { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
-                    { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
-                    { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
-                  ].map((z) => (
-                    <button
-                      key={z.id}
-                      type="button"
-                      onClick={() => setSelectedZoneFilter(z.id)}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer shrink-0 ${
-                        selectedZoneFilter === z.id
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {z.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Locker Grid (Scrolls internally within fixed card height) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-1.5">
-                  {/* No Locker Button */}
+                {/* Dual-View Switcher Tabs */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-[11px] font-extrabold border border-slate-200/60">
                   <button
                     type="button"
-                    onClick={() => setSelectedLockerIds([])}
-                    className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      selectedLockerIds.length === 0
-                        ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-black'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                    onClick={() => setLockerViewMode('quick')}
+                    className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                      lockerViewMode === 'quick'
+                        ? 'bg-white text-indigo-600 shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <div className="text-[11px] font-bold">No Locker</div>
-                    <div className="text-[8px] text-slate-400">Costumes</div>
+                    <Zap size={12} /> Quick Category (+/-)
                   </button>
-
-                  {/* Lockers List */}
-                  {filteredLockers.map((l) => {
-                    const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                    const locId = l.id || l.lockerNumber;
-                    const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
-                    return (
-                      <button
-                        key={l.id || l.lockerNumber}
-                        type="button"
-                        disabled={isAssigned}
-                        onClick={() => handleToggleLocker(l)}
-                        className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer relative flex flex-col justify-between ${
-                          isSelected
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 font-bold shadow-xs'
-                            : isAssigned
-                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
-                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[8px] text-slate-400 font-mono">
-                          <span>{l.zone ? l.zone.slice(0, 3).toUpperCase() : 'MED'}</span>
-                          <span className="font-extrabold text-slate-700">₹{l.rentalFee}</span>
-                        </div>
-                        <div className="text-xs font-mono font-black text-slate-900 my-0.5">{l.lockerNumber}</div>
-                        <div className="text-[8px] font-extrabold">
-                          {isSelected ? (
-                            <span className="text-emerald-700 bg-emerald-100 px-1 rounded text-[8px]">✓ Selected</span>
-                          ) : isAssigned ? (
-                            <span className="text-slate-400 text-[8px]">Occupied</span>
-                          ) : (
-                            <span className="text-emerald-600 text-[8px]">Available</span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  <button
+                    type="button"
+                    onClick={() => setLockerViewMode('grid')}
+                    className={`px-2.5 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                      lockerViewMode === 'grid'
+                        ? 'bg-white text-indigo-600 shadow-2xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Key size={12} /> Visual Locker Grid
+                  </button>
                 </div>
               </div>
+
+              {/* VIEW A: QUICK CATEGORY (+/-) */}
+              {lockerViewMode === 'quick' ? (
+                <div className="flex-1 min-h-0 flex flex-col justify-between overflow-y-auto pr-1 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { key: 'Men', title: '👨 Men Changing Locker', rent: 100, dep: 100, avail: menAvailableLockers },
+                      { key: 'Ladies', title: '👩 Ladies Changing Locker', rent: 100, dep: 100, avail: ladiesAvailableLockers },
+                      { key: 'VIP', title: '👑 VIP Locker Room', rent: 150, dep: 100, avail: vipAvailableLockers },
+                      { key: 'Executive', title: '💼 Executive Locker', rent: 150, dep: 100, avail: execAvailableLockers }
+                    ].map((cat) => {
+                      const selectedInCat = getSelectedZoneLockers(cat.key);
+                      const count = selectedInCat.length;
+                      return (
+                        <div key={cat.key} className="p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-100/60 transition">
+                          <div className="min-w-0">
+                            <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                              <span>{cat.title}</span>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 rounded">
+                                {cat.avail} Available
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                              Rent: <b className="text-slate-800">₹{cat.rent}</b> • Deposit: <b className="text-amber-600">₹{cat.dep}</b>
+                            </div>
+                          </div>
+
+                          {/* Counter Buttons */}
+                          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shrink-0 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveZoneLocker(cat.key)}
+                              disabled={count === 0}
+                              className="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="w-5 text-center font-black text-slate-900 text-xs">{count}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleAddZoneLocker(cat.key)}
+                              disabled={cat.avail === 0}
+                              className="w-5 h-5 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 disabled:opacity-40 cursor-pointer shadow-2xs"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected Lockers Tag Pills */}
+                  {selectedLockerIds.length > 0 && (
+                    <div className="p-1.5 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider shrink-0">
+                        Selected ({selectedLockerIds.length}):
+                      </span>
+                      <div className="flex items-center gap-1 overflow-x-auto">
+                        {selectedLockerIds.map((id) => (
+                          <span key={id} className="bg-white border border-indigo-200 text-indigo-900 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 shadow-2xs">
+                            {id}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLockerIds(selectedLockerIds.filter(lId => lId !== id))}
+                              className="hover:text-red-500 cursor-pointer ml-1"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* VIEW B: VISUAL LOCKER GRID */
+                <div className="flex-1 min-h-0 flex flex-col space-y-1.5 overflow-hidden">
+                  {/* Category Zone Filter Pills */}
+                  <div className="flex items-center gap-1 overflow-x-auto shrink-0 border-b border-slate-100 pb-1">
+                    {[
+                      { id: 'All', label: `All (${totalAvailableLockers})` },
+                      { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
+                      { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
+                      { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
+                      { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
+                    ].map((z) => (
+                      <button
+                        key={z.id}
+                        type="button"
+                        onClick={() => setSelectedZoneFilter(z.id)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition cursor-pointer shrink-0 ${
+                          selectedZoneFilter === z.id
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {z.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Locker Cards Grid */}
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLockerIds([])}
+                        className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                          selectedLockerIds.length === 0
+                            ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-black'
+                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div className="text-[11px] font-bold">No Locker</div>
+                        <div className="text-[8px] text-slate-400">Costumes</div>
+                      </button>
+
+                      {filteredLockers.map((l) => {
+                        const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                        const locId = l.id || l.lockerNumber;
+                        const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
+                        return (
+                          <button
+                            key={l.id || l.lockerNumber}
+                            type="button"
+                            disabled={isAssigned}
+                            onClick={() => handleToggleLocker(l)}
+                            className={`p-1.5 rounded-xl border text-center transition-all cursor-pointer relative flex flex-col justify-between ${
+                              isSelected
+                                ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 font-bold shadow-xs'
+                                : isAssigned
+                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 font-semibold'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[8px] text-slate-400 font-mono">
+                              <span>{l.zone ? l.zone.slice(0, 3).toUpperCase() : 'MED'}</span>
+                              <span className="font-extrabold text-slate-700">₹{l.rentalFee}</span>
+                            </div>
+                            <div className="text-xs font-mono font-black text-slate-900 my-0.5">{l.lockerNumber}</div>
+                            <div className="text-[8px] font-extrabold">
+                              {isSelected ? (
+                                <span className="text-emerald-700 bg-emerald-100 px-1 rounded text-[8px]">✓ Selected</span>
+                              ) : isAssigned ? (
+                                <span className="text-slate-400 text-[8px]">Occupied</span>
+                              ) : (
+                                <span className="text-emerald-600 text-[8px]">Available</span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. COSTUMES & TOWELS PICKER CARD (COMPACT BOTTOM PANEL) */}
@@ -817,594 +960,6 @@ export default function CostumeLockerPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-         MODE 3: 🚀 ENTERPRISE FULL SUITE (Exact Screenshot Design)
-         ========================================================================= */}
-      {currentMode === 'enterprise' && (
-        <div className="flex-1 min-h-0 flex flex-col space-y-4 overflow-y-auto pr-1">
-          {/* Top Metric Cards Bar (4 Cards matching screenshot) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
-            {/* Card 1 */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Assigned Lockers</span>
-                <div className="text-2xl font-black text-slate-900 mt-1">
-                  {assignedLockersCount} <span className="text-slate-400 font-semibold text-sm">/ {(lockersList || []).length}</span>
-                </div>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-                <Key size={20} />
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Active Rentals</span>
-                <div className="text-2xl font-black text-slate-900 mt-1">{activeIssues.length}</div>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                <Shirt size={20} />
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Caution Deposit Held</span>
-                <div className="text-2xl font-black text-amber-600 mt-1">₹{totalCautionHeld}</div>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-                <ShieldAlert size={20} />
-              </div>
-            </div>
-
-            {/* Card 4 */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Today's Rental Income</span>
-                <div className="text-2xl font-black text-blue-600 mt-1">₹{todayRentalRevenue}</div>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                <DollarSign size={20} />
-              </div>
-            </div>
-          </div>
-
-          {/* Unified Customer Search Bar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs space-y-2 shrink-0">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
-                <User size={13} /> Search & Auto-Sync Unified Customer ID
-              </label>
-              <span className="text-[10px] text-slate-400 hidden md:inline">
-                Search above to auto-fill guest profile from Ticket Counter or Check-in.
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Type Customer ID (CST-1001), Phone (+91...), Room # (101), or Wristband Tag and press Enter..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (filteredCustomers.length > 0) {
-                        handleSelectCustomer(filteredCustomers[0]);
-                      } else if (searchQuery.trim()) {
-                        handleSelectCustomer({
-                          customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                          name: searchQuery.trim(),
-                          phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                          roomNumber: '101',
-                          wristbandId: 'W-7854'
-                        });
-                      }
-                    }
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (filteredCustomers.length > 0) {
-                    handleSelectCustomer(filteredCustomers[0]);
-                  } else if (searchQuery.trim()) {
-                    handleSelectCustomer({
-                      customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                      name: searchQuery.trim(),
-                      phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                      roomNumber: '101',
-                      wristbandId: 'W-7854'
-                    });
-                  }
-                }}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Search size={14} /> Search Profile
-              </button>
-            </div>
-
-            {selectedCustomer && (
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2 mt-2">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                      {selectedCustomer.name ? selectedCustomer.name[0].toUpperCase() : 'A'}
-                    </div>
-                    <div>
-                      <span className="text-xs font-extrabold text-slate-900">{selectedCustomer.name}</span>
-                      <span className="text-[11px] text-slate-600 ml-2 font-mono">
-                        <b>{selectedCustomer.customerCode || 'CST-1001'}</b> • Room {selectedCustomer.roomNumber || '101'} • {selectedCustomer.phone}
-                      </span>
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => setSelectedCustomer(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
-                    <X size={15} />
-                  </button>
-                </div>
-
-                {/* Waterpark Ticket Info Banner */}
-                {selectedCustomer.waterparkTickets && (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 text-xs text-indigo-950 flex flex-wrap items-center justify-between gap-2 font-semibold">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-indigo-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md">
-                        🎫 {selectedCustomer.waterparkTickets.bookingRef}
-                      </span>
-                      <span>
-                        {selectedCustomer.waterparkTickets.totalCount} Tickets ({selectedCustomer.waterparkTickets.adultTickets} Adult, {selectedCustomer.waterparkTickets.childTickets} Child)
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-emerald-700">₹{selectedCustomer.waterparkTickets.totalAmount}</span>
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                        {selectedCustomer.waterparkTickets.status}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 4-Tab Navigation Bar (Matching Screenshot) */}
-          <div className="flex items-center gap-2 border-b border-slate-200 bg-white p-1.5 rounded-2xl shadow-2xs shrink-0">
-            <button
-              onClick={() => setActiveTab('issue')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'issue' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Key size={15} /> Issue Locker & Costumes
-            </button>
-            <button
-              onClick={() => setActiveTab('returns')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'returns' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <RotateCcw size={15} /> Returns & Caution Refunds ({activeIssues.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('lockers_grid')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'lockers_grid' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Hash size={15} /> Visual Locker Grid
-            </button>
-            <button
-              onClick={() => setActiveTab('costumes_stock')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'costumes_stock' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Shirt size={15} /> Costume Inventory Register
-            </button>
-          </div>
-
-          {/* Tab 1: Issue Locker & Costumes (Matching Screenshot 2-Column Grid) */}
-          {activeTab === 'issue' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {/* Left Column (Select Locker & Costumes) */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* 1. Select Locker Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                      Select Locker(s)
-                      <span className="bg-indigo-100 text-indigo-800 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
-                        {filteredLockers.length} Lockers ({totalAvailableLockers} Available)
-                      </span>
-                    </h3>
-
-                    {/* Zone Filter Tabs */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                      {[
-                        { id: 'All', label: `All Zones (${totalAvailableLockers})` },
-                        { id: 'Men', label: `👨 Men (${menAvailableLockers})` },
-                        { id: 'Ladies', label: `👩 Ladies (${ladiesAvailableLockers})` },
-                        { id: 'VIP', label: `👑 VIP (${vipAvailableLockers})` },
-                        { id: 'Executive', label: `💼 Exec (${execAvailableLockers})` },
-                      ].map((z) => (
-                        <button
-                          key={z.id}
-                          type="button"
-                          onClick={() => setSelectedZoneFilter(z.id)}
-                          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer shrink-0 ${
-                            selectedZoneFilter === z.id
-                              ? 'bg-indigo-600 text-white shadow-xs'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {z.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Locker Search & Status Filter Bar */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="relative flex-1 w-full">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                      <input
-                        type="text"
-                        placeholder="Search locker (e.g. M-101, L-201, VIP-301)..."
-                        value={lockerSearchQuery}
-                        onChange={(e) => setLockerSearchQuery(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs outline-none focus:border-indigo-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-xs">
-                      {['All', 'available', 'assigned'].map((st) => (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setLockerStatusFilter(st)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
-                            lockerStatusFilter === st
-                              ? 'bg-slate-900 text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {st === 'All' ? 'All Status' : st === 'available' ? '• Available' : '• Occupied'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Locker Cards Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-60 overflow-y-auto pr-1">
-                    {/* No Locker Card */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLockerIds([])}
-                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                        selectedLockerIds.length === 0
-                          ? 'bg-slate-100 border-indigo-500 ring-2 ring-indigo-500/20 text-slate-900 font-bold'
-                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <div className="text-xs font-extrabold text-slate-900">No Locker</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">Costumes only</div>
-                    </button>
-
-                    {/* Locker Cards */}
-                    {filteredLockers.map((l) => {
-                      const isAssigned = l.status === 'assigned' || l.status === 'occupied';
-                      const locId = l.id || l.lockerNumber;
-                      const isSelected = selectedLockerIds.includes(locId) || selectedLockerIds.includes(l.lockerNumber);
-                      return (
-                        <button
-                          key={l.id || l.lockerNumber}
-                          type="button"
-                          disabled={isAssigned}
-                          onClick={() => handleToggleLocker(l)}
-                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                            isSelected
-                              ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold'
-                              : isAssigned
-                              ? 'bg-amber-50/60 border-amber-200 text-amber-800 cursor-not-allowed opacity-70'
-                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        >
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded-full absolute top-2 right-2">
-                            {l.sizeCategory || 'Medium'}
-                          </span>
-                          <div className="text-xs font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">{l.zone || 'Men Area'}</div>
-                          <div className="flex items-center justify-between text-[10px] mt-2 pt-1.5 border-t border-slate-100">
-                            <span>Rent: <b>₹{l.rentalFee}</b></span>
-                            <span className="text-amber-600">Dep: <b>₹{l.securityDeposit}</b></span>
-                          </div>
-                          <div className="text-[10px] mt-1 font-extrabold">
-                            {isSelected ? (
-                              <span className="text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full text-[9px]">✓ Selected</span>
-                            ) : isAssigned ? (
-                              <span className="text-amber-700 text-[9px]">• Occupied</span>
-                            ) : (
-                              <span className="text-emerald-600 text-[9px]">• Available</span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                    {filteredLockers.length === 0 && (
-                      <div className="col-span-full py-6 text-center text-slate-400 text-xs">
-                        No lockers found matching zone & search.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Select Costumes & Towels */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-                  <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                    Select Costumes & Towels
-                  </h3>
-
-                  <div className="space-y-3">
-                    {(costumesList || []).map((c) => {
-                      const costumeId = c.id || c.code;
-                      const selectedCostumeObj = selectedCostumes.find(sc => sc.costumeId === costumeId || sc.code === c.code);
-                      const qty = selectedCostumeObj ? selectedCostumeObj.quantity : 0;
-                      return (
-                        <div key={c.id || c.code} className="p-3.5 bg-slate-50/60 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-extrabold text-slate-900">{c.name}</span>
-                              <span className="bg-indigo-100 text-indigo-800 text-[10px] px-2 py-0.5 rounded-md font-mono font-bold">{c.code}</span>
-                              <span className="bg-slate-200 text-slate-700 text-[10px] px-2 py-0.5 rounded-md font-bold">{c.category || 'Men'} ({c.size || 'L'})</span>
-                            </div>
-                            <p className="text-[11px] text-slate-500 mt-1">
-                              Rent: <b className="text-slate-800">₹{c.rentalFee}</b> • Caution Deposit: <b className="text-amber-600">₹{c.securityDeposit}</b> • Available Stock: <b className="text-emerald-700">{c.totalStock || 30}</b>
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCostumeQty(c, Math.max(0, qty - 1))}
-                              className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs hover:bg-slate-200 cursor-pointer disabled:opacity-40"
-                              disabled={qty === 0}
-                            >
-                              -
-                            </button>
-                            <span className="w-6 text-center font-black text-slate-900 text-xs">{qty}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCostumeQty(c, qty + 1)}
-                              className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs hover:bg-indigo-700 cursor-pointer shadow-2xs"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column (Rental Summary & Charges Card matching screenshot) */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-extrabold text-slate-900">Rental Summary & Charges</h3>
-                  <span className="bg-indigo-50 text-indigo-700 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
-                    {selectedCustomer ? 'Guest Loaded' : 'No Guest'}
-                  </span>
-                </div>
-
-                {/* Warning Alert if No Guest */}
-                {!selectedCustomer ? (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
-                    <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-                    <span>Select guest profile from top search bar.</span>
-                  </div>
-                ) : (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 font-semibold">
-                    Guest: <b>{selectedCustomer.name}</b> ({selectedCustomer.customerCode})
-                  </div>
-                )}
-
-                <div className="space-y-2 text-xs text-slate-600">
-                  <div className="flex justify-between items-center">
-                    <span>Locker(s) Selected:</span>
-                    <b className="text-slate-900 font-mono">
-                      {selectedLockerObjs.length > 0
-                        ? `${selectedLockerObjs.map(l => l.lockerNumber).join(', ')}`
-                        : 'None'}
-                    </b>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Costumes & Towels:</span>
-                    <b className="text-slate-900">{selectedCostumes.length > 0 ? `${selectedCostumes.reduce((sum, c) => sum + c.quantity, 0)} item(s)` : 'No costume selected'}</b>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-100 pt-3 space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Total Rental Fee:</span>
-                    <b className="text-slate-900 font-extrabold">₹{totalRentalFee}</b>
-                  </div>
-                  <div className="flex justify-between text-amber-700">
-                    <span>Caution Deposit (Refundable):</span>
-                    <b className="font-extrabold">₹{totalDepositHeld}</b>
-                  </div>
-                  <div className="border-t border-slate-200 pt-2 flex justify-between text-sm font-black text-indigo-700">
-                    <span>Grand Total Paid:</span>
-                    <span>₹{grandTotalPaid}</span>
-                  </div>
-                </div>
-
-                {/* Payment Method Selector */}
-                <div className="pt-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Payment Method</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['UPI', 'Cash', 'Card'].map((pm) => (
-                      <button
-                        key={pm}
-                        type="button"
-                        onClick={() => setPaymentMode(pm)}
-                        className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                          paymentMode === pm
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        {pm}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <button
-                  type="button"
-                  onClick={handleIssueSubmit}
-                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer mt-2"
-                >
-                  <Printer size={16} /> Issue Locker & Print Receipt (₹{grandTotalPaid})
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Returns & Caution Refunds */}
-          {activeTab === 'returns' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Active Rentals & Pending Caution Refunds</h3>
-                <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
-                  {activeIssues.length} Active
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
-                    <tr>
-                      <th className="pb-3">Guest Name</th>
-                      <th className="pb-3">Customer ID</th>
-                      <th className="pb-3 text-center">Locker</th>
-                      <th className="pb-3 text-center">Deposit Held</th>
-                      <th className="pb-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {activeIssues.map((issue) => (
-                      <tr key={issue.id} className="hover:bg-slate-50 transition">
-                        <td className="py-3 font-bold text-slate-900">{issue.guestName || issue.guest_name}</td>
-                        <td className="py-3 font-mono text-indigo-600">{issue.customerCode}</td>
-                        <td className="py-3 text-center font-bold text-slate-800">{issue.lockerNumber || 'N/A'}</td>
-                        <td className="py-3 text-center font-black text-amber-600">₹{issue.totalDepositHeld || 100}</td>
-                        <td className="py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReturnModalIssue(issue);
-                              setDamageFine(0);
-                              setReturnNotes('');
-                            }}
-                            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
-                          >
-                            <RotateCcw size={13} /> Refund Deposit ₹{issue.totalDepositHeld || 100}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {activeIssues.length === 0 && (
-                      <tr>
-                        <td colSpan="5" className="py-8 text-center text-slate-400 font-semibold">
-                          No Active Rentals currently pending return.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Visual Locker Grid */}
-          {activeTab === 'lockers_grid' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Visual Locker Grid Map</h3>
-                {isSuperAdmin && (
-                  <button onClick={() => setShowAddLockerModal(true)} className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
-                    + Add Locker
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {(lockersList || []).map((l) => (
-                  <div key={l.id || l.lockerNumber} className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-center space-y-1">
-                    <div className="text-sm font-mono font-black text-slate-900">{l.lockerNumber}</div>
-                    <div className="text-xs font-bold text-slate-700">₹{l.rentalFee + l.securityDeposit}</div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${l.status === 'assigned' || l.status === 'occupied' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {l.status === 'assigned' || l.status === 'occupied' ? 'Occupied' : 'Available'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tab 4: Costume Inventory Register */}
-          {activeTab === 'costumes_stock' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900">Swimwear & Costume Inventory Register</h3>
-                {isSuperAdmin && (
-                  <button onClick={() => setShowAddCostumeModal(true)} className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer">
-                    + Add Costume Item
-                  </button>
-                )}
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-400 font-bold uppercase border-b border-slate-100 text-[10px]">
-                    <tr>
-                      <th className="pb-3">Code</th>
-                      <th className="pb-3">Costume Name</th>
-                      <th className="pb-3 text-center">Category</th>
-                      <th className="pb-3 text-center">Size</th>
-                      <th className="pb-3 text-center">Total Stock</th>
-                      <th className="pb-3 text-right">Rent Fee</th>
-                      <th className="pb-3 text-right">Deposit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(costumesList || []).map((c) => (
-                      <tr key={c.id || c.code} className="hover:bg-slate-50 transition">
-                        <td className="py-3 font-mono font-bold text-slate-900">{c.code}</td>
-                        <td className="py-3 font-bold text-indigo-700">{c.name}</td>
-                        <td className="py-3 text-center font-semibold text-slate-600">{c.category || 'Unisex'}</td>
-                        <td className="py-3 text-center font-bold text-slate-800">{c.size || 'M'}</td>
-                        <td className="py-3 text-center font-bold text-emerald-600">{c.totalStock || 30}</td>
-                        <td className="py-3 text-right font-black text-slate-900">₹{c.rentalFee}</td>
-                        <td className="py-3 text-right font-black text-amber-600">₹{c.securityDeposit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
