@@ -33,6 +33,10 @@ export default function CostumeLockerPage() {
   const [paymentMode, setPaymentMode] = useState('UPI');
   const [notes, setNotes] = useState('');
 
+  // Express Counter Sub-Mode state
+  const [expressSubMode, setExpressSubMode] = useState('issue'); // 'issue' or 'return'
+  const [expressReturnSearchQuery, setExpressReturnSearchQuery] = useState('');
+
   // Return Modal state
   const [returnModalIssue, setReturnModalIssue] = useState(null);
   const [damageFine, setDamageFine] = useState(0);
@@ -357,56 +361,193 @@ export default function CostumeLockerPage() {
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 items-stretch overflow-hidden">
           {/* Main Form Column (Left) */}
           <div className="flex-1 min-h-0 flex flex-col space-y-3 overflow-y-auto pr-1">
-            {/* Stepper Progress Bar */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-2xs flex items-center justify-between max-w-2xl mx-auto shrink-0">
+            {/* Express Sub-Mode Selector Toggle Bar */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-2xl shadow-2xs shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  const el = document.getElementById('sec-customer');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}
+                onClick={() => setExpressSubMode('issue')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  expressSubMode === 'issue'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
               >
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
-                Customer
+                <Plus size={16} /> ➕ Issue Locker & Swimwear
               </button>
-              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+
               <button
                 type="button"
-                onClick={() => {
-                  const el = document.getElementById('sec-locker');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }}
-                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}
+                onClick={() => setExpressSubMode('return')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  expressSubMode === 'return'
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
               >
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
-                Locker
-              </button>
-              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('sec-items');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }}
-                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}
-              >
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
-                Items
-              </button>
-              <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('sec-payment');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                }}
-                className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}
-              >
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
-                Payment
+                <RotateCcw size={16} /> 🔄 Return & Caution Refund ({activeIssues.length})
               </button>
             </div>
+
+            {/* IF IN ISSUE SUB-MODE */}
+            {expressSubMode === 'issue' && (
+              <>
+                {/* Stepper Progress Bar */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-2xs flex items-center justify-between max-w-2xl mx-auto shrink-0 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('sec-customer');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 1 ? 'text-emerald-600' : 'text-slate-400'}`}
+                  >
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 1 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>1</span>
+                    Customer
+                  </button>
+                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('sec-locker');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 2 ? 'text-emerald-600' : 'text-slate-400'}`}
+                  >
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 2 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>2</span>
+                    Locker
+                  </button>
+                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('sec-items');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 3 ? 'text-emerald-600' : 'text-slate-400'}`}
+                  >
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 3 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>3</span>
+                    Items
+                  </button>
+                  <div className="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('sec-payment');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }}
+                    className={`flex items-center gap-2 text-xs font-bold transition hover:opacity-80 cursor-pointer ${currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}
+                  >
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500'}`}>4</span>
+                    Payment
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* IF IN RETURN SUB-MODE */}
+            {expressSubMode === 'return' && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <RotateCcw size={16} className="text-amber-500" /> Express Return & Caution Refund Counter
+                    </h3>
+                    <p className="text-xs text-slate-500">Search active rental by Locker No, Customer ID, Wristband, or Guest Name</p>
+                  </div>
+                  <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold">
+                    {activeIssues.length} Active Rentals Pending Return
+                  </span>
+                </div>
+
+                {/* Return Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Type Locker No (e.g. M-101, L-201), Customer ID (CST-1001), Room #, or Wristband Tag..."
+                    value={expressReturnSearchQuery}
+                    onChange={(e) => setExpressReturnSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs placeholder-slate-400 outline-none transition"
+                  />
+                </div>
+
+                {/* Active Issues Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                  {activeIssues
+                    .filter(iss => {
+                      if (!expressReturnSearchQuery.trim()) return true;
+                      const q = expressReturnSearchQuery.toLowerCase();
+                      return (
+                        (iss.lockerNumber || '').toLowerCase().includes(q) ||
+                        (iss.customerCode || '').toLowerCase().includes(q) ||
+                        (iss.guestName || iss.guest_name || '').toLowerCase().includes(q) ||
+                        (iss.roomNumber || '').toLowerCase().includes(q) ||
+                        (iss.wristbandId || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((issue) => (
+                      <div key={issue.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-amber-300 transition shadow-2xs">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="text-sm font-extrabold text-slate-900">{issue.guestName || issue.guest_name || 'Amit Sharma'}</h4>
+                            <p className="text-xs font-mono text-indigo-600 font-bold mt-0.5">
+                              Customer: {issue.customerCode || 'CST-1001'} • Room {issue.roomNumber || '101'}
+                            </p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              Wristband: {issue.wristbandId || 'W-7854'}
+                            </p>
+                          </div>
+                          {issue.lockerNumber && (
+                            <span className="bg-indigo-600 text-white font-mono font-black text-xs px-2.5 py-1 rounded-xl shadow-2xs">
+                              {issue.lockerNumber}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Costumes Rented */}
+                        <div className="space-y-1 text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200/80">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rented Items</span>
+                          {(issue.costumes || []).map((c, idx) => (
+                            <div key={idx} className="flex justify-between font-semibold">
+                              <span>{c.name || 'Swimwear (L)'}</span>
+                              <b className="font-mono text-slate-900">x{c.quantity || 1}</b>
+                            </div>
+                          ))}
+                          {(!issue.costumes || issue.costumes.length === 0) && (
+                            <div className="flex justify-between text-slate-500">
+                              <span>Standard Swimwear (L)</span>
+                              <b className="font-mono">x1</b>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Caution Deposit Held</span>
+                            <span className="text-base font-black text-amber-600">₹{issue.totalDepositHeld || 200}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReturnModalIssue(issue);
+                              setDamageFine(0);
+                              setReturnNotes('');
+                            }}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <RotateCcw size={14} /> Refund Deposit ₹{issue.totalDepositHeld || 200}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  {activeIssues.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-slate-400 font-semibold text-xs">
+                      No active rentals pending return. All lockers and costumes are currently returned!
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Section 1: Search Customer Card */}
             <div id="sec-customer" className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
