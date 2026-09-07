@@ -122,7 +122,7 @@ export default function Sidebar({ modules, activeModule, onNavigate }) {
                 {!collapsed && <span className="flex-1 truncate">{mod.label}</span>}
               </div>
               {!collapsed && mod.sub && (
-                <div className="pl-12 pr-5 py-0.5 text-[10px] text-slate-500 italic leading-tight truncate">
+                <div className="pl-12 pr-5 py-0.5 text-[10px] text-slate-400/90 font-medium leading-tight truncate">
                   {mod.sub}
                 </div>
               )}

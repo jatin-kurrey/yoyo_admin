@@ -13,6 +13,7 @@ export default function CostumeLockerPage() {
   const [currentMode, setCurrentMode] = useState(defaultRules?.costumeLockerMode || 'express');
   const [activeTab, setActiveTab] = useState('issue'); // issue, returns, lockers_grid, costume_stock, history
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showActiveDrawer, setShowActiveDrawer] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -406,6 +407,103 @@ export default function CostumeLockerPage() {
     showToast(`Switched to ${labels[mode]}`);
   };
 
+  // Search matches across Customers, Active Rentals, and Lockers
+  const matchingCustomers = (customers || []).filter(c =>
+    searchQuery.trim() && (
+      (c.customerCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.phone || '').includes(searchQuery) ||
+      (c.roomNumber || '').includes(searchQuery) ||
+      (c.wristbandId || '').toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const matchingActiveRentals = (activeIssues || []).filter(iss =>
+    searchQuery.trim() && (
+      (iss.lockerNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (iss.customerCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (iss.guestName || iss.guest_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (iss.wristbandId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (iss.issueCode || iss.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const matchingLockers = (lockersList || []).filter(l =>
+    searchQuery.trim() && (
+      (l.lockerNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (l.assignedTo || '').toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  const handlePerformSmartSearch = (overrideQuery) => {
+    const q = (overrideQuery !== undefined ? overrideQuery : searchQuery).trim();
+    if (!q) return;
+
+    // 1. Check Active Rentals first
+    const rentalMatch = activeIssues.find(iss =>
+      (iss.lockerNumber || '').toLowerCase() === q.toLowerCase() ||
+      (iss.customerCode || '').toLowerCase() === q.toLowerCase() ||
+      (iss.issueCode || iss.id || '').toString().toLowerCase() === q.toLowerCase() ||
+      (iss.wristbandId || '').toLowerCase() === q.toLowerCase()
+    );
+
+    if (rentalMatch) {
+      setReturnModalIssue(rentalMatch);
+      setDamageFine(0);
+      setReturnNotes('');
+      setShowSearchDropdown(false);
+      showToast(`Active Rental Found: Locker ${rentalMatch.lockerNumber || 'Assigned'} (${rentalMatch.guestName || rentalMatch.customerCode})`, 'info');
+      return;
+    }
+
+    // 2. Check Customer match
+    const custMatch = matchingCustomers.length > 0 ? matchingCustomers[0] : null;
+    if (custMatch) {
+      handleSelectCustomer(custMatch);
+      setActiveTab('issue');
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    // 3. Check Locker match
+    const lockerMatch = matchingLockers.length > 0 ? matchingLockers[0] : null;
+    if (lockerMatch) {
+      const locId = lockerMatch.lockerNumber || lockerMatch.id;
+      if (lockerMatch.status === 'assigned' || lockerMatch.status === 'occupied') {
+        const foundActive = activeIssues.find(i => i.lockerNumber === lockerMatch.lockerNumber);
+        if (foundActive) {
+          setReturnModalIssue(foundActive);
+          setDamageFine(0);
+          setReturnNotes('');
+          showToast(`Locker ${lockerMatch.lockerNumber} is occupied by ${foundActive.guestName}`);
+        } else {
+          setActiveTab('lockers_grid');
+          showToast(`Locker ${lockerMatch.lockerNumber} is assigned.`);
+        }
+      } else {
+        if (!selectedLockerIds.includes(locId)) {
+          setSelectedLockerIds([...selectedLockerIds, locId]);
+        }
+        setActiveTab('issue');
+        showToast(`Locker ${lockerMatch.lockerNumber} selected for issue!`);
+      }
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    // 4. Fallback: Create dynamic customer record for this ID/Phone/Name
+    const dynamicCust = {
+      customerCode: q.startsWith('CST') ? q.toUpperCase() : `CST-${q.toUpperCase()}`,
+      name: q.match(/^[a-zA-Z\s]+$/) ? q : `Guest (${q})`,
+      phone: q.match(/^\+?\d+$/) ? q : '+91 98765 11223',
+      roomNumber: '101',
+      wristbandId: `W-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    handleSelectCustomer(dynamicCust);
+    setActiveTab('issue');
+    setShowSearchDropdown(false);
+  };
+
   return (
     <div className="h-full flex-1 flex flex-col bg-slate-100/70 p-2 md:p-2.5 overflow-hidden space-y-2">
       {/* TOP COMPACT HEADER & UNIFIED SEARCH BAR */}
@@ -420,51 +518,191 @@ export default function CostumeLockerPage() {
           </div>
         </div>
 
-        {/* CENTER: HIGHLIGHTED GUEST SEARCH BAR */}
-        <div className="flex-1 max-w-xl mx-auto w-full">
+        {/* CENTER: HIGHLIGHTED GUEST SEARCH BAR & LIVE AUTO-SUGGEST */}
+        <div className="flex-1 max-w-xl mx-auto w-full relative">
           <div className="relative flex items-center">
             <Search className="absolute left-3.5 text-indigo-600" size={17} />
             <input
               type="text"
-              placeholder="Search by Customer ID (CST-1001), Phone, Room #, or Wristband..."
+              placeholder="Search by Customer ID (CST-1001), Phone, Room #, Wristband, or Locker..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSearchDropdown(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(true);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
-                  else if (searchQuery.trim()) {
-                    handleSelectCustomer({
-                      customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                      name: searchQuery.trim(),
-                      phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                      roomNumber: '101',
-                      wristbandId: 'W-7854'
-                    });
-                  }
+                  handlePerformSmartSearch();
                 }
               }}
-              className="w-full bg-indigo-50/40 border-2 border-indigo-500 focus:border-indigo-600 ring-4 ring-indigo-500/10 text-slate-900 font-medium rounded-xl pl-10 pr-24 py-2 text-xs md:text-sm placeholder-slate-400 outline-none transition shadow-2xs"
+              className="w-full bg-indigo-50/40 border-2 border-indigo-500 focus:border-indigo-600 ring-4 ring-indigo-500/10 text-slate-900 font-medium rounded-xl pl-10 pr-28 py-2 text-xs md:text-sm placeholder-slate-400 outline-none transition shadow-2xs"
             />
+            
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowSearchDropdown(false);
+                }}
+                className="absolute right-24 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                title="Clear Search"
+              >
+                <X size={14} />
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => {
-                if (filteredCustomers.length > 0) handleSelectCustomer(filteredCustomers[0]);
-                else if (searchQuery.trim()) {
-                  handleSelectCustomer({
-                    customerCode: searchQuery.trim().startsWith('CST') ? searchQuery.trim() : `CST-${Math.floor(1000 + Math.random() * 9000)}`,
-                    name: searchQuery.trim(),
-                    phone: searchQuery.trim().match(/^\+?\d+$/) ? searchQuery.trim() : '+91 98765 11223',
-                    roomNumber: '101',
-                    wristbandId: 'W-7854'
-                  });
-                }
-              }}
+              onClick={() => handlePerformSmartSearch()}
               className="absolute right-1 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition cursor-pointer shadow-xs"
             >
               Search ID
             </button>
           </div>
+
+          {/* LIVE AUTO-SUGGEST DROPDOWN */}
+          {showSearchDropdown && searchQuery.trim() && (
+            <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-indigo-200 shadow-2xl rounded-2xl z-50 max-h-80 overflow-y-auto p-2 space-y-2">
+              {/* SECTION: ACTIVE RENTALS MATCH */}
+              {matchingActiveRentals.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-black text-amber-700 uppercase tracking-wider px-2.5 py-1 bg-amber-50 rounded-lg flex items-center justify-between">
+                    <span>Active Rentals & Refunds</span>
+                    <span className="font-mono text-amber-800 font-bold">{matchingActiveRentals.length} found</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {matchingActiveRentals.map((iss) => (
+                      <div
+                        key={iss.id}
+                        onClick={() => {
+                          setReturnModalIssue(iss);
+                          setDamageFine(0);
+                          setReturnNotes('');
+                          setShowSearchDropdown(false);
+                          showToast(`Opened refund for ${iss.guestName || iss.customerCode}`);
+                        }}
+                        className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50/80 border border-slate-200/80 cursor-pointer transition flex items-center justify-between"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{iss.guestName || iss.guest_name}</span>
+                            <span className="text-[10px] font-mono text-indigo-600 font-bold">({iss.customerCode})</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            Locker: <b className="text-indigo-700">{iss.lockerNumber || 'N/A'}</b> • Room #{iss.roomNumber || '101'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-extrabold text-amber-600 block">₹{iss.totalDepositHeld || 200} Dep</span>
+                          <span className="text-[9px] font-bold text-amber-800 bg-amber-200/60 px-1.5 py-0.5 rounded">Refund</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: CUSTOMERS MATCH */}
+              {matchingCustomers.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-black text-indigo-700 uppercase tracking-wider px-2.5 py-1 bg-indigo-50 rounded-lg flex items-center justify-between">
+                    <span>Guest Profiles</span>
+                    <span className="font-mono text-indigo-800 font-bold">{matchingCustomers.length} found</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {matchingCustomers.map((cust) => (
+                      <div
+                        key={cust.id || cust.customerCode}
+                        onClick={() => {
+                          handleSelectCustomer(cust);
+                          setActiveTab('issue');
+                          setShowSearchDropdown(false);
+                        }}
+                        className="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-200/80 cursor-pointer transition flex items-center justify-between"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{cust.name}</span>
+                            <span className="text-[10px] font-mono text-indigo-600 font-bold">({cust.customerCode})</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-mono">
+                            Phone: {cust.phone} • Room #{cust.roomNumber || '101'}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-lg">
+                          Select
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: LOCKERS MATCH */}
+              {matchingLockers.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-black text-emerald-700 uppercase tracking-wider px-2.5 py-1 bg-emerald-50 rounded-lg flex items-center justify-between">
+                    <span>Lockers</span>
+                    <span className="font-mono text-emerald-800 font-bold">{matchingLockers.length} found</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {matchingLockers.map((l) => {
+                      const isAssigned = l.status === 'assigned' || l.status === 'occupied';
+                      return (
+                        <div
+                          key={l.id || l.lockerNumber}
+                          onClick={() => {
+                            const locId = l.lockerNumber || l.id;
+                            if (isAssigned) {
+                              const foundActive = activeIssues.find(i => i.lockerNumber === l.lockerNumber);
+                              if (foundActive) {
+                                setReturnModalIssue(foundActive);
+                                setDamageFine(0);
+                                setReturnNotes('');
+                              } else {
+                                setActiveTab('lockers_grid');
+                              }
+                            } else {
+                              if (!selectedLockerIds.includes(locId)) {
+                                setSelectedLockerIds([...selectedLockerIds, locId]);
+                              }
+                              setActiveTab('issue');
+                            }
+                            setShowSearchDropdown(false);
+                          }}
+                          className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200/80 cursor-pointer transition flex items-center justify-between"
+                        >
+                          <div>
+                            <span className="text-xs font-black font-mono text-slate-900">Locker {l.lockerNumber}</span>
+                            <span className="text-[10px] text-slate-500 ml-2">({l.zone})</span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
+                            isAssigned ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {isAssigned ? 'Assigned' : 'Available'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* NO EXACT MATCHES FALLBACK */}
+              {matchingActiveRentals.length === 0 && matchingCustomers.length === 0 && matchingLockers.length === 0 && (
+                <div
+                  onClick={() => handlePerformSmartSearch()}
+                  className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl cursor-pointer text-center space-y-1 hover:bg-indigo-100 transition"
+                >
+                  <div className="text-xs font-extrabold text-indigo-900">Auto-Create Dynamic Guest Ticket</div>
+                  <div className="text-[11px] text-indigo-700">Click to select ID <b>"{searchQuery}"</b> for immediate issue</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* RIGHT: QUICK STATS & FULLSCREEN */}
@@ -488,8 +726,8 @@ export default function CostumeLockerPage() {
       </div>
 
       {/* MULTI-TAB NAVIGATION BAR */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-2 px-3 shadow-2xs flex items-center justify-between gap-2 shrink-0 overflow-x-auto">
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-2 px-3 shadow-2xs flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full scrollbar-none pb-0.5">
           {[
             { id: 'issue', label: 'Issue Locker & Costume', icon: Key },
             { id: 'returns', label: 'Active Rentals & Refunds', icon: RotateCcw, count: activeIssues.length },
@@ -521,27 +759,6 @@ export default function CostumeLockerPage() {
               </button>
             );
           })}
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {activeTab === 'lockers_grid' && (
-            <button
-              type="button"
-              onClick={() => setShowAddLockerModal(true)}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={14} /> New Locker
-            </button>
-          )}
-          {activeTab === 'costume_stock' && (
-            <button
-              type="button"
-              onClick={() => setShowAddCostumeModal(true)}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={14} /> New Costume Item
-            </button>
-          )}
         </div>
       </div>
 

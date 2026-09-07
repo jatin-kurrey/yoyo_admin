@@ -111,7 +111,7 @@ function AppInner() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 text-slate-800 relative">
       <Header onNewBooking={() => openNewBooking()} onNavigate={handleNavigate} />
-      <div className="flex flex-1 overflow-hidden">
+      <div className={`flex flex-1 overflow-hidden ${usingMockData ? 'pb-6' : ''}`}>
         <Sidebar modules={sidebarModules} activeModule={activeModule} onNavigate={handleNavigate} />
         {renderMain()}
         {needsRightPanel && showRightPanel && <RightPanel onClose={() => setShowRightPanel(false)} />}
