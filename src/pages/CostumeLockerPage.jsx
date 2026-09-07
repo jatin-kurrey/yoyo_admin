@@ -4,7 +4,7 @@ import { pmsService } from '../services/pmsService';
 import {
   Key, Search, Plus, RotateCcw, CheckCircle, AlertTriangle, UserCheck,
   ShieldAlert, DollarSign, Shirt, Hash, X, Printer, User, UserPlus,
-  Zap, Sliders, ChevronDown, ShoppingBag, History, CreditCard, Banknote, Smartphone
+  Zap, Sliders, ChevronDown, ShoppingBag, History, CreditCard, Banknote, Smartphone, Receipt
 } from 'lucide-react';
 
 export default function CostumeLockerPage() {
